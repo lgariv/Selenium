@@ -1,3 +1,6 @@
+# Folders
+.vscode
 
-.DS_Store
+# Files
 *.deb
+.DS_Store

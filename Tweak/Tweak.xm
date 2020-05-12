@@ -817,7 +817,8 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
         popoverController.sourceView = alertController.view;
         popoverController.sourceRect = [alertController.view bounds];
 
-        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
+        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f+40.0f
+        ]];
 
         for (UIWindow *window in [UIApplication sharedApplication].windows) {
             if (window.isKeyWindow) {

@@ -1,12 +1,12 @@
 include $(THEOS)/makefiles/common.mk
 
 ARCHS = arm64 arm64e
-BUNDLE_NAME = AxonPrefs
+BUNDLE_NAME = SnoozerPrefs
 $(BUNDLE_NAME)_FILES = Preferences.m AXNListItemsController.m KRLinkCell.m KRTableCell.m KRTwitterCell.m
 $(BUNDLE_NAME)_INSTALL_PATH = /Library/PreferenceBundles
 $(BUNDLE_NAME)_FRAMEWORKS = UIKit
 $(BUNDLE_NAME)_PRIVATE_FRAMEWORKS = Preferences
-# $(BUNDLE_NAME)_EXTRA_FRAMEWORKS = Cephei CepheiPrefs
+#$(BUNDLE_NAME)_EXTRA_FRAMEWORKS = Cephei CepheiPrefs
 ADDITIONAL_OBJCFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/bundle.mk

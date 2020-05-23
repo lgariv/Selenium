@@ -1,6 +1,6 @@
 {
     entry = {
-	bundle = AxonPrefs;
+	bundle = SnoozerPrefs;
 	cell = PSLinkCell;
 	detail = AXNPrefsListController;
 	isController = 1;

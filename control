@@ -1,7 +1,6 @@
 Package: me.snoozer.axon
 Name: Snoozer
 Depends: mobilesubstrate, firmware (>= 13.0)
-Conflicts: me.snoozer.axon, io.ominousness.stackxi, com.thomasfinch.priorityhub, com.ioscreatix.intelixbeta, com.ioscreatix.intelix, com.spiritoflogic.ncunify, com.spiritoflogic.unifyx, com.hidan.nclink10, org.coolstar.ventana-modern, org.coolstar.ventana, org.s1ris.spinxi
 Version: 0.0.1
 Architecture: iphoneos-arm
 Maintainer: Lavie Gariv

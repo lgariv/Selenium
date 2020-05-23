@@ -1277,7 +1277,7 @@ static __attribute__((constructor)) void _logosLocalCtor_c95824bf(int __unused a
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
         (CFNotificationCallback)preferencesChanged,
-        (CFStringRef)@"me.nepeta.axon/ReloadPrefs",
+        (CFStringRef)@"me.snoozer.axon/ReloadPrefs",
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );

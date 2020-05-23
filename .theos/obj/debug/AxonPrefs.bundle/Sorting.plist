@@ -18,7 +18,7 @@
 			<key>default</key>
 			<integer>0</integer>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>key</key>
 			<string>SortingMode</string>
 			<key>validValues</key>
@@ -36,7 +36,7 @@
 			<key>alignment</key>
 			<string>3</string>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -52,7 +52,7 @@
 			<key>default</key>
 			<integer>0</integer>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>key</key>
 			<string>ShowByDefault</string>
 			<key>validValues</key>
@@ -72,7 +72,7 @@
 			<key>alignment</key>
 			<string>3</string>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 
 		<dict>
@@ -89,7 +89,7 @@
 			<key>default</key>
 			<integer>0</integer>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>key</key>
 			<string>SelectionStyle</string>
 			<key>validValues</key>
@@ -105,7 +105,7 @@
 			<key>alignment</key>
 			<string>2</string>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
      </array>
 	<key>title</key>

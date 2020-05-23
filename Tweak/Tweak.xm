@@ -1251,7 +1251,7 @@ static void preferencesChanged()
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
         (CFNotificationCallback)preferencesChanged,
-        (CFStringRef)@"me.nepeta.axon/ReloadPrefs",
+        (CFStringRef)@"me.snoozer.axon/ReloadPrefs",
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );

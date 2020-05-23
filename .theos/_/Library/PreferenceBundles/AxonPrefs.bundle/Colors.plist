@@ -20,7 +20,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>label</key>
 			<string>Wallpaper tints cells</string>
 			<key>key</key>
@@ -28,7 +28,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>-->
 		<dict>
 			<key>cell</key>
@@ -36,7 +36,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>label</key>
 			<string>Wallpaper tints badge text</string>
 			<key>key</key>
@@ -44,7 +44,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 				<dict>
 			<key>cell</key>
@@ -52,7 +52,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>label</key>
 			<string>Dim fades entire cell</string>
 			<key>key</key>
@@ -60,7 +60,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -76,7 +76,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>label</key>
 			<string>ENABLED</string>
 			<key>key</key>
@@ -84,7 +84,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -92,7 +92,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.nepeta.axon</string>
+			<string>me.snoozer.axon</string>
 			<key>label</key>
 			<string>SHOW_BACKGROUND</string>
 			<key>key</key>
@@ -100,7 +100,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.nepeta.axon/ReloadPrefs</string>
+			<string>me.snoozer.axon/ReloadPrefs</string>
 		</dict>
 
      </array>

@@ -1247,12 +1247,6 @@ static void preferencesChanged()
     
     NSLog(@"[Axon] init");
 
-    dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axon.list"];
-    /*if (!dpkgInvalid) dpkgInvalid = !([[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/lib/apt/lists/repo.nepeta.me_._Release"]
-    || [[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/mobile/Library/Caches/com.saurik.Cydia/lists/repo.nepeta.me_._Release"]
-    || [[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/mobile/Documents/xyz.willy.Zebra/zebra.db"]);*/
-    if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axon.md5sums"];
-
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
@@ -1262,7 +1256,7 @@ static void preferencesChanged()
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
 
-    if (!dpkgInvalid && enabled) {
+    if (enabled) {
         %init(Axon);
         if (!vertical) {
             %init(AxonHorizontal);

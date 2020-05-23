@@ -1,10 +1,10 @@
 include $(THEOS)/makefiles/common.mk
 
 ARCHS = arm64 arm64e 
-TWEAK_NAME = Snoozer
+TWEAK_NAME = Axon
 $(TWEAK_NAME)_FILES = Tweak.xm $(wildcard AXN*.m)
 $(TWEAK_NAME)_FRAMEWORKS += QuartzCore WebKit MediaPlayer UIKit
-$(TWEAK_NAME)_PRIVATE_FRAMEWORKS = ControlCenterUIKit 
+$(TWEAK_NAME)_PRIVATE_FRAMEWORKS = ControlCenterUIKit PersistentConnection
 ADDITIONAL_OBJCFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk

@@ -444,6 +444,34 @@ static double secondsLeft;
 static NSString *configPath = @"/var/mobile/Library/QuietDown/config.plist";
 static NSMutableDictionary *config;
 
+static void storeSnoozed(NCNotificationRequest *request) {
+  NSString *req = [NSString stringWithFormat:@"%@", request];
+  NSMutableArray *entries = [config[@"storeSnoozed"] mutableCopy];
+  bool add = YES;
+  NSDictionary *remove = nil;
+  for (NSMutableDictionary *entry in entries) {
+    NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
+    [parts removeObject:parts[0]];
+    NSString *combinedparts = [parts componentsJoinedByString:@";"];
+    if ([req containsString:combinedparts]) {
+        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+        entry[@"timeToRemove"] = removeDate;
+        add = NO;
+    }
+  }
+  if (remove) {
+    [entries removeObject:remove];
+  }
+  if (add) {
+    NSDictionary *info;
+    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+    info = @{@"id": req, @"timeToRemove": removeDate};
+    [entries addObject:info];
+  }
+  [config setValue:entries forKey:@"storeSnoozed"];
+  [config writeToFile:configPath atomically:YES];
+}
+
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
@@ -471,6 +499,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
+    storeSnoozed(request);
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
@@ -553,11 +582,22 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 - (UIImage *) imageWithView:(UIView *)view;
 @end
 
-@interface NSTimer ()
-- (instancetype)initWithFireDate:(NSDate *)date 
-                        interval:(NSTimeInterval)interval 
-                         repeats:(BOOL)repeats 
-                           block:(void (^)(NSTimer *timer))block;
+@interface PCSimpleTimer : NSObject {
+	NSRunLoop* _timerRunLoop;
+}
+@end
+
+@interface PCPersistentTimer : NSObject {
+    PCSimpleTimer* _simpleTimer;
+	id _userInfo;
+}
+/*@end
+
+@interface PCPersistentTimer ()*/
+-(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
+-(void)scheduleInRunLoop:(id)arg1 ;
+
+-(id)userInfo;
 @end
 
 %hook SpringBoard
@@ -759,7 +799,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
     [alert addAction:[UIAlertAction actionWithTitle:@"Specific time" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-        //[alertController setTitle:@"Snooze until:"]; //\n\n\n\n\n\n\n\n\n\n\n\n\n\n
+        [alertController setTitle:@"Snooze until:"]; //\n\n\n\n\n\n\n\n\n\n\n\n\n\n
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         UIDatePicker *picker = [[UIDatePicker alloc] init];
         [picker setDatePickerMode:UIDatePickerModeDateAndTime];
@@ -817,8 +857,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
         popoverController.sourceView = alertController.view;
         popoverController.sourceRect = [alertController.view bounds];
 
-        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f+40.0f
-        ]];
+        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
         for (UIWindow *window in [UIApplication sharedApplication].windows) {
             if (window.isKeyWindow) {
@@ -892,7 +931,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
                 NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
-            processEntry(request, [senderFix.pickerDate timeIntervalSinceNow], nil);
+            processEntry(request, -1, senderFix.pickerDate);
         }
         NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
                                                       interval:nil
@@ -910,17 +949,35 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
             NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", senderFix.request.content.header];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
+        PCPersistentTimer *PersistentTimer = [%c(PCPersistentTimer) alloc];
+        PCSimpleTimer *simpleTimer = MSHookIvar<PCSimpleTimer *>(PersistentTimer, "_simpleTimer");
+        NSRunLoop *timerRunLoop = MSHookIvar<NSRunLoop *>(simpleTimer, "_timerRunLoop");
+        NSDictionary* userInfo = @{@"request" : senderFix.request};
+        PCPersistentTimer *timerShow = [[PCPersistentTimer alloc] initWithFireDate:senderFix.pickerDate
+                            serviceIdentifier:nil
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:timerRunLoop];
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(senderFix.request, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:senderFix.request];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
 
-        processEntry(senderFix.request, [senderFix.pickerDate timeIntervalSinceNow], nil);
+        processEntry(senderFix.request, -1, senderFix.pickerDate);
     }
+}
+
+%new
+-(void)timerOperations:(PCPersistentTimer *)timer {
+    NSDictionary* userInfo = timer.userInfo;
+    NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
+    processEntry(request, 0, nil);
+    [[AXNManager sharedInstance] showNotificationRequest:request];
 }
 %end
 
@@ -1089,7 +1146,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     }
     return CGSizeMake(orig.width - 96, orig.height);
 }
-
 %end
 
 // iOS 13 Support
@@ -1100,94 +1156,14 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     else return UIEdgeInsetsMake(0, 0, 0, -96);
 }
 %end
-
-#pragma mark disabled
-
-/*%hook SBDashBoardCombinedListViewController
-
-%property (nonatomic, retain) AXNView *axnView;
-
--(void)viewDidLoad{
-    %orig;
-    if (!initialized) {
-        initialized = YES;
-        self.axnView = [[AXNView alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 96, 0, 96, 500)];
-        self.axnView.translatesAutoresizingMaskIntoConstraints = NO;
-        self.axnView.collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
-        [AXNManager sharedInstance].view = self.axnView;
-        updateViewConfiguration();
-
-        [self.view addSubview:self.axnView];
-
-        [NSLayoutConstraint activateConstraints:@[
-            [self.axnView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
-            [self.axnView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor],
-            [self.axnView.widthAnchor constraintEqualToConstant:90]
-        ]];
-
-        if (verticalPosition == 0) {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-            ]];
-        } else {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-            ]];
-        }
-    }
-    [AXNManager sharedInstance].sbclvc = self;
-}
-
-%end*/
-
-#pragma mark disabled
-
-// iOS 13 Support
-/*%hook CSCombinedListViewController
-%property (nonatomic, retain) AXNView *axnView;
--(void)viewDidLoad{
-    %orig;
-    if (!initialized) {
-        initialized = YES;
-        self.axnView = [[AXNView alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 96, 0, 96, 500)];
-        self.axnView.translatesAutoresizingMaskIntoConstraints = NO;
-        self.axnView.collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
-        [AXNManager sharedInstance].view = self.axnView;
-        updateViewConfiguration();
-
-        [self.view addSubview:self.axnView];
-
-        [NSLayoutConstraint activateConstraints:@[
-            [self.axnView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
-            [self.axnView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor],
-            [self.axnView.widthAnchor constraintEqualToConstant:90]
-        ]];
-
-        if (verticalPosition == 0) {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-            ]];
-        } else {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-            ]];
-        }
-    }
-    [AXNManager sharedInstance].sbclvc = self;
-}
-%end*/
-
 %end
 
 %group AxonHorizontal
-
 %hook SBDashBoardCombinedListViewController
-
 -(void)viewDidLoad{
     %orig;
     [AXNManager sharedInstance].sbclvc = self;
 }
-
 %end
 
 // iOS 13 Support
@@ -1197,195 +1173,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     [AXNManager sharedInstance].sbclvc = self;
 }
 %end
-
-#pragma mark disabled
-
-/*%hook SBDashBoardNotificationAdjunctListViewController
-
-%property (nonatomic, retain) AXNView *axnView;
-
--(void)viewDidLoad {
-    %orig;
-
-    if (!initialized) {
-        initialized = YES;
-        UIStackView *stackView = [self valueForKey:@"_stackView"];
-        self.axnView = [[AXNView alloc] initWithFrame:CGRectMake(0,0,64,90)];
-        self.axnView.translatesAutoresizingMaskIntoConstraints = NO;
-        [AXNManager sharedInstance].view = self.axnView;
-        updateViewConfiguration();
-
-        [stackView addArrangedSubview:self.axnView];
-
-        [NSLayoutConstraint activateConstraints:@[
-            [self.axnView.centerXAnchor constraintEqualToAnchor:stackView.centerXAnchor],
-            [self.axnView.leadingAnchor constraintEqualToAnchor:stackView.leadingAnchor constant:10],
-            [self.axnView.trailingAnchor constraintEqualToAnchor:stackView.trailingAnchor constant:-10],
-            // [self.axnView.heightAnchor constraintEqualToConstant:90]
-        ]];
-
-
-        if (style <= 3) {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:90]
-            ]];
-        } else if (style ==4){
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:30]
-            ]];
-        } else {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:40]
-            ]];
-        }
-    }
-}
-
-// This is used to make the Axon view last, e.g. when media controls are presented. 
-
--(void)_updatePresentingContent {
-    %orig;
-    UIStackView *stackView = [self valueForKey:@"_stackView"];
-    [stackView removeArrangedSubview:self.axnView];
-    [stackView addArrangedSubview:self.axnView];
-}
-
--(void)_insertItem:(id)arg1 animated:(BOOL)arg2 {
-    %orig;
-    UIStackView *stackView = [self valueForKey:@"_stackView"];
-    [stackView removeArrangedSubview:self.axnView];
-    [stackView addArrangedSubview:self.axnView];
-}
-
-// Let Springboard know we have a little surprise for it. 
-
--(BOOL)isPresentingContent {
-    return YES;
-}
-
-%end*/
-
-#pragma mark disabled
-
-/*%hook CSNotificationAdjunctListViewController
-%property (nonatomic, retain) AXNView *axnView;
--(void)viewDidLoad {
-    %orig;
-
-    if (!initialized) {
-        initialized = YES;
-        UIStackView *stackView = [self valueForKey:@"_stackView"];
-        self.axnView = [[AXNView alloc] initWithFrame:CGRectMake(0,0,64,90)];
-        self.axnView.translatesAutoresizingMaskIntoConstraints = NO;
-        [AXNManager sharedInstance].view = self.axnView;
-        updateViewConfiguration();
-
-        [stackView addArrangedSubview:self.axnView];
-
-        [NSLayoutConstraint activateConstraints:@[
-            [self.axnView.centerXAnchor constraintEqualToAnchor:stackView.centerXAnchor],
-            [self.axnView.leadingAnchor constraintEqualToAnchor:stackView.leadingAnchor constant:10],
-            [self.axnView.trailingAnchor constraintEqualToAnchor:stackView.trailingAnchor constant:-10],
-            // [self.axnView.heightAnchor constraintEqualToConstant:90]
-        ]];
-
-
-        if (style <= 3) {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:90]
-            ]];
-        } else if (style ==4){
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:30]
-            ]];
-        } else {
-            [NSLayoutConstraint activateConstraints:@[
-                [self.axnView.heightAnchor constraintEqualToConstant:40]
-            ]];
-        }
-    }
-}
-
--(void)_updatePresentingContent {
-    %orig;
-    UIStackView *stackView = [self valueForKey:@"_stackView"];
-    [stackView removeArrangedSubview:self.axnView];
-    [stackView addArrangedSubview:self.axnView];
-}
--(void)_insertItem:(id)arg1 animated:(BOOL)arg2 {
-    %orig;
-    UIStackView *stackView = [self valueForKey:@"_stackView"];
-    [stackView removeArrangedSubview:self.axnView];
-    [stackView addArrangedSubview:self.axnView];
-}
-
--(BOOL)isPresentingContent {
-    return YES;
-}
-%end*/
-
-#pragma mark disabled
-
-/*@interface NCNotificationListSectionHeaderView : UIView
-@end
-
-%hook NCNotificationListSectionHeaderView
-// Remove Section Header Text
-
-- (void)layoutSubviews
-{
-    self.hidden = 1;
-}
-- (CGRect)frame 
-{
-    return CGRectZero;
-}
-- (void)setFrame:(CGRect)arg1
-{
-    %orig(CGRectZero);
-}
-%end*/
-
-%end
-
-%group AxonIntegrityFail
-
-%hook SBIconController
-
-%property (retain,nonatomic) WKWebView *axnIntegrityView;
-
--(void)loadView{
-    %orig;
-    if (!dpkgInvalid) return;
-    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
-    self.axnIntegrityView = [[WKWebView alloc] initWithFrame:self.view.bounds configuration:configuration];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://piracy.kritanta.me/"]];
-    [self.axnIntegrityView loadRequest:request];
-    [self.view addSubview:self.axnIntegrityView];
-    [self.view sendSubviewToBack:self.axnIntegrityView];
-}
-
--(void)viewDidAppear:(BOOL)animated{
-    %orig;
-    if (!dpkgInvalid) return;
-    UIAlertController *alertController = [UIAlertController
-        alertControllerWithTitle:@"😡😡😡"
-        message:@"The build of Axon you're using comes from an untrusted source. Pirate repositories can distribute malware and you will get subpar user experience using any tweaks from them.\nRemember: Axon is free. Uninstall this build and install the proper version of Axon from:\nhttps://repo.kritanta.me/\n(it's free, damnit, why would you pirate that!?)\n\nIf you're seeing this message but have obtained Axon from an official source, add https://repo.kritanta.me/ to Cydia or Sileo and respring."
-        preferredStyle:UIAlertControllerStyleAlert
-    ];
-
-    [alertController addAction:[UIAlertAction actionWithTitle:@"Damn!" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        UIApplication *application = [UIApplication sharedApplication];
-        [application openURL:[NSURL URLWithString:@"https://repo.kritanta.me/"] options:@{} completionHandler:nil];
-
-        [self dismissViewControllerAnimated:YES completion:NULL];
-    }]];
-
-    [self presentViewController:alertController animated:YES completion:NULL];
-}
-
-%end
-
 %end
 
 /* Hide all notifications on open. */
@@ -1455,225 +1242,6 @@ static void preferencesChanged()
     updateViewConfiguration();
 }
 
-#pragma mark my addition
-@interface CCUIContentModuleContentContainerView : UIView
-@end
-
-@interface CCUIContentModuleBackgroundView : UIView
-@end 
-
-@interface MTMaterialView : UIView
-@end 
-
-@interface CCUIRoundButton : UIControl
-@property (nonatomic, retain) MTMaterialView *normalStateBackgroundView;
-- (void)_unhighlight;
-- (void)setHighlighted:(bool)arg1;
-@end
-
-@interface CCUILabeledRoundButton : UIView
-@property (nonatomic, assign) bool centered;
-@property (nonatomic, copy) NSString *title;
-@property (nonatomic, copy) NSString *subtitle;
-@property (nonatomic, assign) bool labelsVisible;
-@property (nonatomic, retain) UIImage *glyphImage;
-@property (nonatomic, retain) CCUIRoundButton *buttonView;
-- (id)initWithGlyphImage:(id)arg1 highlightColor:(id)arg2 useLightStyle:(BOOL)arg3;
-- (void)updatePosition;
-@end
-
-@interface CCUILabeledRoundButtonViewController : UIViewController
-@property (nonatomic,copy) NSString *title;
-@property (nonatomic,copy) NSString *subtitle;
-@property (nonatomic, retain) UIColor *highlightColor;
-@property (nonatomic, assign) bool labelsVisible;
-@property (nonatomic, retain) CCUILabeledRoundButton *buttonContainer;
-@property (nonatomic, retain) CCUIRoundButton *button;
--(id)initWithGlyphImage:(id)arg1 highlightColor:(id)arg2 useLightStyle:(BOOL)arg3 ;
-@end
-
-@interface CCUIDisplayBackgroundViewController : UIViewController
-@property (nonatomic, retain) CCUILabeledRoundButtonViewController *nightShiftButton;
-@property (nonatomic, retain) CCUILabeledRoundButtonViewController *trueToneButton;
-@end
-
-@interface CCUIContentModuleContainerViewController : UIViewController
-@property (nonatomic,copy) NSString *moduleIdentifier;
-@property (nonatomic,strong,readwrite) CCUIContentModuleBackgroundView *backgroundView;
-@property (nonatomic,retain) CCUIDisplayBackgroundViewController *backgroundViewController;
-@property (nonatomic, retain) CCUILabeledRoundButtonViewController *darkButton;
-@end
-
-@interface CAPackage : NSObject
-@property (readonly) CALayer *rootLayer;
-@property (readonly) BOOL geometryFlipped;
-+ (id)packageWithContentsOfURL:(id)arg1 type:(id)arg2 options:(id)arg3 error:(id)arg4;
-- (id)_initWithContentsOfURL:(id)arg1 type:(id)arg2 options:(id)arg3 error:(id)arg4;
-@end
-
-extern NSString const *kCAPackageTypeCAMLBundle;
-
-@interface CCUICAPackageView : UIView
-@property (nonatomic, retain) CAPackage *package;
-- (void)setStateName:(id)arg1;
-@end
-
-@interface CCUIDuneButton : CCUIRoundButton
-@property (nonatomic, retain) UIView *backgroundView;
-@property (nonatomic, retain) CCUICAPackageView *packageView;
-- (id)initWithGlyphImage:(id)arg1 highlightColor:(id)arg2 useLightStyle:(BOOL)arg3;
-- (void)updateStateAnimated:(bool)arg1;
-@end
-
-static BOOL isDNDEnabled;
-static BOOL isDuneEnabled;
-static CGRect ccBounds;
-static UIImage *nightImage;
-static UIImage *toneImage;
-static BOOL shouldSnooze;
-
-static void setDuneEnabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-  isDuneEnabled = YES;
-  [[NSNotificationCenter defaultCenter] postNotificationName:@"xyz.skitty.dune.update" object:nil userInfo:nil];
-}
-
-static void setDuneDisabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-  isDuneEnabled = NO;
-  [[NSNotificationCenter defaultCenter] postNotificationName:@"xyz.skitty.dune.update" object:nil userInfo:nil];
-}
-
-%group Toggle
-%subclass CCUIDuneButton : CCUIRoundButton
-%property (nonatomic, retain) UIView *backgroundView;
-%property (nonatomic, retain) CCUICAPackageView *packageView;
-- (void)layoutSubviews {
-  %orig;
-  if (!self.packageView) {
-    self.backgroundView = [[UIView alloc] initWithFrame:self.bounds];
-    self.backgroundView.userInteractionEnabled = NO;
-    self.backgroundView.layer.cornerRadius = self.bounds.size.width/2;
-    self.backgroundView.layer.masksToBounds = YES;
-    self.backgroundView.backgroundColor = [UIColor redColor];
-    self.backgroundView.alpha = 0;
-    [self addSubview:self.backgroundView];
-
-    self.packageView = [[%c(CCUICAPackageView) alloc] initWithFrame:self.bounds];
-    self.packageView.package = [CAPackage packageWithContentsOfURL:[NSURL fileURLWithPath:@"/Library/Application Support/Dune/StyleMode.ca"] type:kCAPackageTypeCAMLBundle options:nil error:nil];
-    [self.packageView setStateName:@"dark"];
-    [self addSubview:self.packageView];
-
-    [self setHighlighted:NO];
-    [self updateStateAnimated:NO];
-  }
-}
-- (void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
-  %orig;
-  if (isDuneEnabled) {
-    shouldSnooze = YES;
-    CFPreferencesSetAppValue((CFStringRef)@"enabled", (CFPropertyListRef)[NSNumber numberWithBool:NO], CFSTR("com.skitty.dune"));
-  } else {
-    shouldSnooze = NO;
-    CFPreferencesSetAppValue((CFStringRef)@"enabled", (CFPropertyListRef)[NSNumber numberWithBool:YES], CFSTR("com.skitty.dune"));
-  }
-
-  //refreshPrefs();
-  [self updateStateAnimated:YES];
-}
-%new
-- (void)updateStateAnimated:(bool)animated {
-  if (!isDuneEnabled) {
-    ((CCUILabeledRoundButton *)self.superview).subtitle = [NSString stringWithFormat:@"On"];
-    [self.packageView setStateName:@"On"];
-    if (animated) {
-      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
-        self.backgroundView.alpha = 1;
-      } completion:nil];
-    } else {
-      self.backgroundView.alpha = 1;
-    }
-  } else {
-    ((CCUILabeledRoundButton *)self.superview).subtitle = @"Off";
-    [self.packageView setStateName:@"Off"];
-    if (animated) {
-      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
-        self.backgroundView.alpha = 0;
-      } completion:nil];
-    } else {
-      self.backgroundView.alpha = 0;
-    }
-  }
-}
-%end
-
-%hook CCUIContentModuleContainerViewController
-%property (nonatomic, retain) CCUILabeledRoundButtonViewController *darkButton;
-- (void)setExpanded:(bool)arg1 {
-  %orig;
-  if (arg1 && [self.moduleIdentifier containsString:@"donot"]) {
-    ccBounds = self.view.superview.bounds;
-    if (!self.darkButton) {
-      self.darkButton = [[%c(CCUILabeledRoundButtonViewController) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
-      self.darkButton.buttonContainer = [[%c(CCUILabeledRoundButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
-      [self.darkButton.buttonContainer setFrame:CGRectMake(0, 0, 72, 91)];
-      [self.darkButton.buttonContainer setBounds:CGRectMake(self.darkButton.buttonContainer.frame.origin.x, self.darkButton.buttonContainer.frame.origin.y, self.darkButton.buttonContainer.frame.size.width+10, self.darkButton.buttonContainer.frame.size.height)];
-      self.darkButton.view = self.darkButton.buttonContainer;
-      self.darkButton.buttonContainer.buttonView = [[%c(CCUIDuneButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
-      [self.darkButton.buttonContainer addSubview:self.darkButton.buttonContainer.buttonView];
-      self.darkButton.button = self.darkButton.buttonContainer.buttonView;
-
-      self.darkButton.title = @"Snooze";
-      if (isDuneEnabled) {
-        self.darkButton.subtitle = [NSString stringWithFormat:@"On"];
-        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"On"];
-      } else {
-        self.darkButton.subtitle = @"Off";
-        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"Off"];
-      }
-      [self.darkButton setLabelsVisible:YES];
-
-      [self.backgroundView addSubview:self.darkButton.buttonContainer];
-    }
-    [self.darkButton.buttonContainer updatePosition];
-    self.darkButton.buttonContainer.alpha = 1;
-  }
-}
-%end
-
-%hook CCUILabeledRoundButton
-%property (nonatomic, assign) bool centered;
-- (void)setCenter:(CGPoint)center {
-  if (self.centered) {
-    return;
-  } else {
-    self.centered = YES;
-    %orig;
-  }
-}
-%new
-- (void)updatePosition {
-  self.centered = NO;
-  CGPoint center;
-  if ([self.title isEqual: @"Snooze"]) {
-    if (ccBounds.size.width < ccBounds.size.height) {
-      center.x = ccBounds.size.width/2;
-      center.y = ccBounds.size.height-ccBounds.size.height*0.14;
-    } else {
-      center.x = ccBounds.size.width-ccBounds.size.width*0.14;
-      center.y = ccBounds.size.height/2;
-    }
-  }
-  [self setCenter:center];
-}
-%end
-
-%hook DNDState
--(BOOL)isActive {
-  isDNDEnabled = %orig;
-  return %orig;
-}
-%end
-%end
-
 %ctor{
     preferencesChanged();
     
@@ -1695,34 +1263,17 @@ static void setDuneDisabled(CFNotificationCenterRef center, void *observer, CFSt
     );
 
     if (!dpkgInvalid && enabled) {
-        BOOL ok = false;
-
-        ok = ([[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/var/lib/dpkg/info/%@%@%@%@%@%@%@%@%@.axon.md5sums", @"m", @"e", @".", @"n", @"e", @"p", @"e", @"t", @"a"]]
-                /* &&
-                ([[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/lib/apt/lists/repo.%@%@%@%@%@%@.me_._Release", @"n", @"e", @"p", @"e", @"t", @"a"]] ||
-                [[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/mobile/Library/Caches/com.saurik.Cydia/lists/repo.%@%@%@%@%@%@.me_._Release", @"n", @"e", @"p", @"e", @"t", @"a"]] ||
-                [[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/mobile/Documents/xyz.willy.Zebra/%@%@%@%@%@.db", @"z", @"e", @"b", @"r", @"a"]])*/
-        );
-
-        if (ok && [@"nepeta" isEqualToString:@"nepeta"]) {
-            %init(Axon);
-            if (!vertical) {
-                %init(AxonHorizontal);
-            } else {
-                %init(AxonVertical);
-            }
-            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-            return;
+        %init(Axon);
+        if (!vertical) {
+            %init(AxonHorizontal);
         } else {
-            dpkgInvalid = YES;
+            %init(AxonVertical);
         }
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+        return;
     }
 
-    if (enabled) %init(AxonIntegrityFail);
-
     #pragma mark my addition
-
-    %init(Toggle);
 
     NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
     [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileOwnerAccountID];
@@ -1737,7 +1288,5 @@ static void setDuneDisabled(CFNotificationCenterRef center, void *observer, CFSt
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
         [@{@"entries":@[]} writeToFile:configPath atomically:YES];
     }
-        config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
 }

@@ -1,5 +1,6 @@
 # Folders
 .vscode
+packages
 
 # Files
 *.deb

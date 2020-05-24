@@ -444,9 +444,9 @@ static double secondsLeft;
 static NSString *configPath = @"/var/mobile/Library/QuietDown/config.plist";
 static NSMutableDictionary *config;
 
-static void storeSnoozed(NCNotificationRequest *request) {
+static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
   NSString *req = [NSString stringWithFormat:@"%@", request];
-  NSMutableArray *entries = [config[@"storeSnoozed"] mutableCopy];
+  NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
   for (NSMutableDictionary *entry in entries) {
@@ -456,10 +456,11 @@ static void storeSnoozed(NCNotificationRequest *request) {
     if ([req containsString:combinedparts]) {
         NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
         entry[@"timeToRemove"] = removeDate;
+        remove = entry;
         add = NO;
     }
   }
-  if (remove) {
+  if (shouldRemove && (remove != nil)) {
     [entries removeObject:remove];
   }
   if (add) {
@@ -468,7 +469,7 @@ static void storeSnoozed(NCNotificationRequest *request) {
     info = @{@"id": req, @"timeToRemove": removeDate};
     [entries addObject:info];
   }
-  [config setValue:entries forKey:@"storeSnoozed"];
+  [config setValue:entries forKey:@"snoozedCache"];
   [config writeToFile:configPath atomically:YES];
 }
 
@@ -499,7 +500,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
-    storeSnoozed(request);
+    storeSnoozed(request, NO);
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
@@ -609,6 +610,13 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
             processEntry(expiredReq, 0, nil);
         }
     }
+    NSMutableArray *snoozedCache = [config[@"snoozedCache"] mutableCopy];
+    for (NSMutableDictionary *snoozedNotif in snoozedCache) {
+        if (([[NSDate date] timeIntervalSince1970] - [snoozedNotif[@"timeToRemove"] timeIntervalSince1970]) >= 1) {
+            NCNotificationRequest *snoozedNotifReq = snoozedNotif[@"id"];
+            storeSnoozed(snoozedNotifReq, YES);
+        }
+    }
 }
 
 %new
@@ -635,9 +643,9 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
                 NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
-            processEntry(request, 900, nil);
+            processEntry(request, 5, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:5]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -653,7 +661,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
             NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:5]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -661,7 +669,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
-        processEntry(requestToProcess, 900, nil);
+        processEntry(requestToProcess, 5, nil);
     }
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"For 1 Hour" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
@@ -1050,12 +1058,27 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             return;
         }
     }
+    NSMutableArray *snoozedNotifs = [config[@"snoozedCache"] mutableCopy];
+    for (NSMutableDictionary *entry in snoozedNotifs) {
+        NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
+        [parts removeObject:parts[0]];
+        NSString *combinedparts = [parts componentsJoinedByString:@";"];
+        if ([req containsString:combinedparts]) {
+            NCNotificationRequest *argFix = arg1;
+            if (![argFix.content.header containsString:@"Snoozed"]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", argFix.content.header];
+                [argFix.content setValue:newTitle forKey:@"_header"];
+            }
+            %orig(argFix);
+            return;
+        }
+    }
     %orig;
 }
 %end
 
 %hook SBNCScreenController
--(void)turnOnScreenForNotificationRequest:(id)arg1 {
+-(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1284,7 +1307,7 @@ static void preferencesChanged()
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [@{@"entries":@[]} writeToFile:configPath atomically:YES];
+        [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[]} writeToFile:configPath atomically:YES];
     }
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
 }

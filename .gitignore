@@ -1,6 +1,7 @@
 # Folders
 .vscode
 packages
+.theos
 
 # Files
 *.deb

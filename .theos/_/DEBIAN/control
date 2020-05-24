@@ -1,0 +1,9 @@
+Package: me.snoozer.axon
+Name: Snoozer
+Depends: mobilesubstrate, firmware (>= 13.0)
+Architecture: iphoneos-arm
+Maintainer: Lavie Gariv
+Author: Nepeta 
+Section: Tweaks
+Version: 0.0.1
+Installed-Size: 1196

@@ -591,20 +591,24 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     PCSimpleTimer* _simpleTimer;
 	id _userInfo;
 }
-/*@end
-
-@interface PCPersistentTimer ()*/
 -(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
 -(void)scheduleInRunLoop:(id)arg1 ;
-
 -(id)userInfo;
 @end
 
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
-  %orig;
-  config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"xyz.skitty.quietdown.menu" object:nil];
+    %orig;
+    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"xyz.skitty.quietdown.menu" object:nil];
+    
+    NSMutableArray *entries = [config[@"entries"] mutableCopy];
+    for (NSMutableDictionary *entry in entries) {
+        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timeStamp"] doubleValue]) >= 1) {
+            NCNotificationRequest *expiredReq = entry[@"id"];
+            processEntry(expiredReq, 0, nil);
+        }
+    }
 }
 
 %new

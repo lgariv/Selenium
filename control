@@ -1,6 +1,7 @@
 Package: com.miwix.selenium
 Name: Selenium
 Depends: mobilesubstrate, firmware (>= 13.0)
+Conflicts: me.nepeta.axon, com.hackyouriphone.axon
 Version: 0.0.1
 Architecture: iphoneos-arm
 Maintainer: Lavie Gariv

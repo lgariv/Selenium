@@ -622,7 +622,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 #pragma mark DND start
 
-#import "TweakCCDUNE.h"
+/*#import "TweakCCDUNE.h"
 
 // to make notifications appear when finished
 static void setStateForDND(bool state) {
@@ -634,7 +634,7 @@ static void setStateForDND(bool state) {
     }
 	[config setValue:isEnabled forKey:@"DNDEnabled"];
 	[config writeToFile:configPath atomically:YES];
-}
+}*/
 
 /*static void processEntryDND(NCNotificationRequest *request) {
   NSString *req = [NSString stringWithFormat:@"%@", request];
@@ -682,7 +682,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
   return stop;
 }
 */
-@interface UIView (mxcl)
+/*@interface UIView (mxcl)
 - (CCUIContentModuleContainerViewController *)parentViewController;
 @end
 
@@ -850,7 +850,7 @@ static void preferencesChanged();
   return %orig;
 }
 %end
-
+*/
 #pragma mark DND end
 
 @interface SBAlertItem : NSObject
@@ -1570,6 +1570,6 @@ static void preferencesChanged()
         [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} writeToFile:configPath atomically:YES];
     }
 
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 }

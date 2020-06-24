@@ -1,6 +1,7 @@
 include $(THEOS)/makefiles/common.mk
 
 ARCHS = arm64 arm64e 
+
 TWEAK_NAME = Selenium
 $(TWEAK_NAME)_FILES = Tweak.xm $(wildcard AXN*.m)
 $(TWEAK_NAME)_FRAMEWORKS += QuartzCore WebKit MediaPlayer UIKit

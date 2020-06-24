@@ -1525,7 +1525,7 @@ static void preferencesChanged()
 %ctor{
     preferencesChanged();
     
-    NSLog(@"[Axon] init");
+    NSLog(@"[Selenium] init");
 
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(),

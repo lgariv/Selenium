@@ -116,7 +116,7 @@
     else if([icon respondsToSelector:@selector(iconImageWithInfo:)]) image = [icon iconImageWithInfo:(struct SBIconImageInfo){60,60,2,0}];
 
     if (!image) {
-      NSLog(@"[Axon] Image Not Founded!");
+      NSLog(@"[Selenium] Image Not Founded!");
         NSArray *requests = [self requestsForBundleIdentifier:bundleIdentifier];
         for (int i = 0; i < [requests count]; i++) {
             NCNotificationRequest *request = requests[i];

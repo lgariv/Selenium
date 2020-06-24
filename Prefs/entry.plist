@@ -1,6 +1,6 @@
 {
     entry = {
-	bundle = SnoozerPrefs;
+	bundle = SeleniumPrefs;
 	cell = PSLinkCell;
 	detail = AXNPrefsListController;
 	isController = 1;

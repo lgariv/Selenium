@@ -4,9 +4,9 @@
 #import "RandomHeaders.h"
 #import "AXNView.h"
 
-#define kIdentifier @"me.snoozer.axon"
-#define kSettingsChangedNotification (CFStringRef)@"me.snoozer.axon/ReloadPrefs"
-#define kSettingsPath @"/var/mobile/Library/Preferences/me.snoozer.axon.plist"
+#define kIdentifier @"com.miwix.selenium"
+#define kSettingsChangedNotification (CFStringRef)@"com.miwix.selenium/ReloadPrefs"
+#define kSettingsPath @"/var/mobile/Library/Preferences/com.miwix.selenium.plist"
 
 @interface SBDashBoardNotificationAdjunctListViewController : UIViewController {
     UIStackView* _stackView;

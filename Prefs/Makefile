@@ -1,7 +1,7 @@
 include $(THEOS)/makefiles/common.mk
 
 ARCHS = arm64 arm64e
-BUNDLE_NAME = SnoozerPrefs
+BUNDLE_NAME = SeleniumPrefs
 $(BUNDLE_NAME)_FILES = Preferences.m AXNListItemsController.m KRLinkCell.m KRTableCell.m KRTwitterCell.m
 $(BUNDLE_NAME)_INSTALL_PATH = /Library/PreferenceBundles
 $(BUNDLE_NAME)_FRAMEWORKS = UIKit

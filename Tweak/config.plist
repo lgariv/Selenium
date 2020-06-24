@@ -3,10 +3,18 @@
 <plist version="1.0">
 <dict>
 	<key>entries</key>
-	<array>
-	</array>
-	<key>storeSnoozed</key>
-	<array>
-	</array>
+		<array>
+		</array>
+	<key>snoozedCache</key>
+		<array>
+		</array>
+	<key>DND</key>
+		<array>
+		</array>
+	<key>location</key>
+		<array>
+		</array>
+	<key>DNDEnabled</key>
+		<true/>
 </dict>
 </plist>

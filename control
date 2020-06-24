@@ -1,5 +1,5 @@
-Package: me.snoozer.axon
-Name: Snoozer
+Package: com.miwix.selenium
+Name: Selenium
 Depends: mobilesubstrate, firmware (>= 13.0)
 Version: 0.0.1
 Architecture: iphoneos-arm

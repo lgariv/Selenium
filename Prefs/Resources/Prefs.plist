@@ -18,7 +18,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.snoozer.axon</string>
+			<string>com.miwix.selenium</string>
 			<key>label</key>
 			<string>ENABLED_RESPRING</string>
 			<key>key</key>
@@ -26,7 +26,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.snoozer.axon/ReloadPrefs</string>
+			<string>com.miwix.selenium/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -34,7 +34,7 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>me.snoozer.axon</string>
+			<string>com.miwix.selenium</string>
 			<key>label</key>
 			<string>HAPTIC_FEEDBACK</string>
 			<key>key</key>
@@ -42,7 +42,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.snoozer.axon/ReloadPrefs</string>
+			<string>com.miwix.selenium/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -50,7 +50,7 @@
 			<key>default</key>
 			<false/>
 			<key>defaults</key>
-			<string>me.snoozer.axon</string>
+			<string>com.miwix.selenium</string>
 			<key>label</key>
 			<string>DARK_MODE</string>
 			<key>key</key>
@@ -58,7 +58,7 @@
 			<key>alternateColors</key>
 			<true/>
 			<key>PostNotification</key>
-			<string>me.snoozer.axon/ReloadPrefs</string>
+			<string>com.miwix.selenium/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -68,7 +68,7 @@
 			<key>default</key>
 			<integer>0</integer>
 			<key>defaults</key>
-			<string>me.snoozer.axon</string>
+			<string>com.miwix.selenium</string>
 			<key>label</key>
 			<string>STYLE</string>
 			<key>key</key>
@@ -92,7 +92,7 @@
 				<string>ROUNDED_GROUP</string>
 			</array>
 			<key>PostNotification</key>
-			<string>me.snoozer.axon/ReloadPrefs</string>
+			<string>com.miwix.selenium/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>

@@ -26,7 +26,7 @@
     
         self.iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,10,10)];
         self.iconView.contentMode = UIViewContentModeScaleAspectFit;
-        self.iconView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SnoozerPrefs.bundle/icon@2x.png"];
+        self.iconView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SeleniumPrefs.bundle/icon@2x.png"];
         self.iconView.translatesAutoresizingMaskIntoConstraints = NO;
         self.iconView.alpha = 0.0;
         [self.navigationItem.titleView addSubview:self.iconView];
@@ -72,7 +72,7 @@
     self.headerView = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
     self.headerImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,200,200)];
     self.headerImageView.contentMode = UIViewContentModeScaleAspectFill;
-    self.headerImageView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SnoozerPrefs.bundle/axon.png"];
+    self.headerImageView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SeleniumPrefs.bundle/axon.png"];
     self.headerImageView.translatesAutoresizingMaskIntoConstraints = NO;
 
     [self.headerView addSubview:self.headerImageView];

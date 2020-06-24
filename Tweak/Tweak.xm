@@ -5,6 +5,7 @@
 BOOL dpkgInvalid = NO;
 BOOL initialized = NO;
 BOOL enabled;
+BOOL enabledForDND;
 BOOL vertical;
 BOOL badgesEnabled;
 BOOL badgesShowBackground;
@@ -379,6 +380,10 @@ void updateViewConfiguration() {
 - (void)swipedUp:(id)arg1;
 @end
 
+@interface NCNotificationListCellActionButton : UIControl
+@property (nonatomic,retain) UILabel * titleLabel;                                                                       //@synthesize titleLabel=_titleLabel - In the implementation block
+@end
+
 @interface UIView (FUCK)
 @property (nonatomic,copy) NSString * title;                                                                             //@synthesize title=_title - In the implementation block
 @end
@@ -391,23 +396,39 @@ NCNotificationRequest *reqToBeSnoozed;
 
 UIView *newView;
 UIButton *newButton;
+UIImageView *iconView;
 
 %hook NCNotificationListCellActionButtonsView
--(void)layoutSubviews {
+-(void)_layoutButtonsStackView {
     %orig;
 
     // Get the options StackView array
-    //NSArray<NCNotificationListCellActionButton*> *buttonsArray = self.buttonsStackView.arrangedSubviews;
+    NSArray<NCNotificationListCellActionButton *> *buttonsArray = self.buttonsStackView.arrangedSubviews;
 
     // Process only if 3 CellActionButton are present
     // Less than 3 means the left option pannel is opened or the right one is already processed
-    if (self.buttonsStackView.arrangedSubviews.count == 3) {
-        // Remove the Manage option 
-        self.buttonsStackView.arrangedSubviews[1].title = @"Snooze";
-        [self.buttonsStackView.arrangedSubviews[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
-        [self.buttonsStackView.arrangedSubviews[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
+    if (buttonsArray.count == 3) {
+        // Replace the View option 
+        buttonsArray[1].title = @"Snooze";
+        [buttonsArray[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
+        [buttonsArray[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
+        /*[iconView removeFromSuperview];
+        if (!iconView) {
+            iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,buttonsArray[1].frame.size.width,buttonsArray[1].frame.size.height)];
+            //iconView.bounds = CGRectMake(0,0,buttonsArray[1].bounds.size.width,buttonsArray[1].bounds.size.height);
+            iconView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            iconView.contentMode = UIViewContentModeScaleAspectFit;
+            iconView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SeleniumPrefs.bundle/iconGreen.PNG"];
+            iconView.translatesAutoresizingMaskIntoConstraints = YES;
+        } else iconView.frame = CGRectMake(0,0,buttonsArray[1].frame.size.width,buttonsArray[1].frame.size.height);
+        [buttonsArray[1] insertSubview:iconView aboveSubview:buttonsArray[1].titleLabel];*/
     }
 }
+
+/*-(void)_configureActionButtonsForActionButtonDescriptions:(id)arg1 cell:(id)arg2 {
+    NSLog(@"[SELENIUM] arg1: %@ arg2: %@",[arg1 class],[arg2 class]);
+    %orig;
+}*/
 
 -(void)configureCellActionButtonsForNotificationRequest:(id)arg1 sectionSettings:(id)arg2 cell:(id)arg3 {
     argToDismiss = arg1;
@@ -434,14 +455,14 @@ UIButton *newButton;
 %new
 - (void)swipedUp:(id)arg1 {
     NSDictionary *info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"xyz.skitty.quietdown.menu" object:nil userInfo:info];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
 }
 %end
 
 //static double minutesLeft;
 static double secondsLeft;
 
-static NSString *configPath = @"/var/mobile/Library/QuietDown/config.plist";
+static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
 static NSMutableDictionary *config;
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
@@ -583,7 +604,9 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 - (UIImage *) imageWithView:(UIView *)view;
 @end
 
-@interface PCSimpleTimer : NSObject {
+// Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
+// [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.]
+/*@interface PCSimpleTimer : NSObject {
 	NSRunLoop* _timerRunLoop;
 }
 @end
@@ -595,13 +618,254 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 -(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
 -(void)scheduleInRunLoop:(id)arg1 ;
 -(id)userInfo;
+@end*/
+
+#pragma mark DND start
+
+#import "TweakCCDUNE.h"
+
+// to make notifications appear when finished
+static void setStateForDND(bool state) {
+    NSDictionary *isEnabled;
+    if (state) {
+        isEnabled = @{@"DNDEnabled": @YES};
+    } else {
+        isEnabled = @{@"DNDEnabled": @NO};
+    }
+	[config setValue:isEnabled forKey:@"DNDEnabled"];
+	[config writeToFile:configPath atomically:YES];
+}
+
+/*static void processEntryDND(NCNotificationRequest *request) {
+  NSString *req = [NSString stringWithFormat:@"%@", request];
+  NSMutableArray *entries = [config[@"DND"] mutableCopy];
+  bool add = YES;
+  //NSDictionary *remove = nil;
+  for (NSMutableDictionary *entry in entries) {
+    NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
+    [parts removeObject:parts[0]];
+    NSString *combinedparts = [parts componentsJoinedByString:@";"];
+    if ([req containsString:combinedparts]) {
+        add = NO;
+    }
+  }*/
+  /*if (remove) {
+    [entries removeObject:remove];
+  }*/
+/*  if (add) {
+    storeSnoozed(request, NO);
+    NSDictionary *info;
+    info = @{@"id": req};
+    if (info) {
+      [entries addObject:info];
+    }
+  }
+  [config setValue:entries forKey:@"DND"];
+  [config writeToFile:configPath atomically:YES];
+}
+
+static bool shouldStopRequest(NCNotificationRequest *request) {
+  bool stop = NO;
+  NSMutableArray *removeObjects = [[NSMutableArray alloc] init];
+  for (NSDictionary *entry in (NSArray *)config[@"DND"]) {
+    double interval = [[NSDate date] timeIntervalSince1970];
+    if ([(NSString *)request.sectionIdentifier isEqualToString:(NSString *)entry[@"id"]] && (interval < [entry[@"timeStamp"] doubleValue] || [entry[@"timeStamp"] doubleValue] == -1)) {
+      stop = YES;
+    } else if (interval > [entry[@"timeStamp"] doubleValue] && [entry[@"timeStamp"] doubleValue] != -1) {
+      [removeObjects addObject:entry];
+    }
+  }
+  if (removeObjects) {
+    [config[@"DND"] removeObjectsInArray:removeObjects];
+    [config writeToFile:configPath atomically:YES];
+  }
+  return stop;
+}
+*/
+@interface UIView (mxcl)
+- (CCUIContentModuleContainerViewController *)parentViewController;
+@end
+
+@implementation UIView (mxcl)
+- (CCUIContentModuleContainerViewController *)parentViewController {
+    UIResponder *responder = self;
+    while ([responder isKindOfClass:[UIView class]])
+        responder = [responder nextResponder];
+    return (CCUIContentModuleContainerViewController *)responder;
+}
+@end
+
+static BOOL shouldSnooze;
+static BOOL isDNDEnabled;
+static BOOL isDuneEnabled;
+static CGRect ccBounds;
+
+// Toggle Notifications
+static void setDuneEnabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+  setStateForDND(YES);
+}
+
+static void setDuneDisabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+  setStateForDND(NO);
+}
+
+static void duneEnabled() {
+  CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("xyz.skitty.dune.enabled"), nil, nil, true);
+  shouldSnooze = YES;
+}
+
+static void duneDisabled() {
+  CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("xyz.skitty.dune.disabled"), nil, nil, true);
+  shouldSnooze = NO;
+}
+
+static void preferencesChanged();
+
+%subclass CCUIDuneButton : CCUIRoundButton
+%property (nonatomic, retain) UIView *backgroundView;
+%property (nonatomic, retain) CCUICAPackageView *packageView;
+- (void)layoutSubviews {
+  %orig;
+  if (!self.packageView) {
+    self.backgroundView = [[UIView alloc] initWithFrame:self.bounds];
+    self.backgroundView.userInteractionEnabled = NO;
+    self.backgroundView.layer.cornerRadius = self.bounds.size.width/2;
+    self.backgroundView.layer.masksToBounds = YES;
+    self.backgroundView.backgroundColor = [UIColor systemBlueColor];
+    self.backgroundView.alpha = 0;
+    [self addSubview:self.backgroundView];
+
+    self.packageView = [[%c(CCUICAPackageView) alloc] initWithFrame:self.bounds];
+    self.packageView.package = [CAPackage packageWithContentsOfURL:[NSURL fileURLWithPath:@"/Library/Application Support/Dune/StyleMode.ca"] type:kCAPackageTypeCAMLBundle options:nil error:nil];
+    [self.packageView setStateName:@"dark"];
+    [self addSubview:self.packageView];
+
+    [self setHighlighted:NO];
+    [self updateStateAnimated:NO];
+  }
+}
+- (void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
+  %orig;
+  if (isDuneEnabled) {
+    duneDisabled();
+    setStateForDND(NO);
+  } else {
+    duneEnabled();
+    setStateForDND(YES);
+  }
+
+  preferencesChanged();
+  [self updateStateAnimated:YES];
+}
+%new
+- (void)updateStateAnimated:(bool)animated {
+  if (!isDuneEnabled) {
+    ((CCUILabeledRoundButton *)self.superview).subtitle = [NSString stringWithFormat:@"On"];
+    [self.packageView setStateName:@"On"];
+    if (animated) {
+      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
+        self.backgroundView.alpha = 1;
+      } completion:nil];
+    } else {
+      self.backgroundView.alpha = 1;
+    }
+  } else {
+    ((CCUILabeledRoundButton *)self.superview).subtitle = @"Off";
+    [self.packageView setStateName:@"Off"];
+    if (animated) {
+      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
+        self.backgroundView.alpha = 0;
+      } completion:nil];
+    } else {
+      self.backgroundView.alpha = 0;
+    }
+  }
+}
+%end
+
+%hook CCUIContentModuleContainerViewController
+%property (nonatomic, retain) CCUILabeledRoundButtonViewController *darkButton;
+- (void)setExpanded:(bool)arg1 {
+  %orig;
+  if (arg1 && [self.moduleIdentifier containsString:@"donot"]) {
+    ccBounds = self.view.superview.bounds;
+    if (!self.darkButton) {
+      self.darkButton = [[%c(CCUILabeledRoundButtonViewController) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
+      self.darkButton.buttonContainer = [[%c(CCUILabeledRoundButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
+      [self.darkButton.buttonContainer setFrame:CGRectMake(0, 0, 72, 91)];
+      [self.darkButton.buttonContainer setBounds:CGRectMake(self.darkButton.buttonContainer.frame.origin.x, self.darkButton.buttonContainer.frame.origin.y, self.darkButton.buttonContainer.frame.size.width+10, self.darkButton.buttonContainer.frame.size.height)];
+      self.darkButton.view = self.darkButton.buttonContainer;
+      self.darkButton.buttonContainer.buttonView = [[%c(CCUIDuneButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
+      [self.darkButton.buttonContainer addSubview:self.darkButton.buttonContainer.buttonView];
+      self.darkButton.button = self.darkButton.buttonContainer.buttonView;
+
+      self.darkButton.title = @"Snooze";
+      if (isDuneEnabled) {
+        self.darkButton.subtitle = [NSString stringWithFormat:@"On"];
+        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"On"];
+      } else {
+        self.darkButton.subtitle = @"Off";
+        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"Off"];
+      }
+      [self.darkButton setLabelsVisible:YES];
+
+      [self.backgroundView addSubview:self.darkButton.buttonContainer];
+    }
+    [self.darkButton.buttonContainer updatePosition];
+    self.darkButton.buttonContainer.alpha = 1;
+  }
+}
+%end
+
+%hook CCUILabeledRoundButton
+%property (nonatomic, assign) bool centered;
+- (void)setCenter:(CGPoint)center {
+  if (self.centered) {
+    return;
+  } else {
+    self.centered = YES;
+    %orig;
+  }
+}
+%new
+- (void)updatePosition {
+  self.centered = NO;
+  CGPoint center;
+  if ([self.title isEqual: @"Snooze"]) {
+    if (ccBounds.size.width < ccBounds.size.height) {
+      center.x = ccBounds.size.width/2;
+      center.y = ccBounds.size.height-ccBounds.size.height*0.14;
+    } else {
+      center.x = ccBounds.size.width-ccBounds.size.width*0.14;
+      center.y = ccBounds.size.height/2;
+    }
+  }
+  [self setCenter:center];
+}
+%end
+
+%hook DNDState
+-(BOOL)isActive {
+  isDNDEnabled = %orig;
+  return %orig;
+}
+%end
+
+#pragma mark DND end
+
+@interface SBAlertItem : NSObject
+@end
+
+@interface _SBAlertController : UIAlertController
+@property (assign,nonatomic) SBAlertItem * alertItem;                                             //@synthesize alertItem=_alertItem - In the implementation block
+-(void)setAlertItem:(SBAlertItem *)arg1 ;
 @end
 
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"xyz.skitty.quietdown.menu" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -621,22 +885,25 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 %new
 - (void)showMuteMenu:(NSNotification *)notification {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Snooze notifications" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     NCNotificationRequest *requestToProcess = notification.userInfo[@"id"];
     NCNotificationListCell *cellToCapture = notification.userInfo[@"cell"];
     NCNotificationListView *cellListView = (NCNotificationListView *)cellToCapture.superview;
     NCNotificationGroupList *groupList = cellListView.dataSource;
     NSMutableArray *reqsArray = [groupList.orderedRequests copy];
 
+    UIAlertController *alert;
+
     BOOL grouped;
     if (cellListView.grouped) {
         grouped = YES;
+        alert = [UIAlertController alertControllerWithTitle:@"Snooze Notifications" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     } else {
         grouped = NO;
+        alert = [UIAlertController alertControllerWithTitle:@"Snooze Notification" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     }
 
   [alert addAction:[UIAlertAction actionWithTitle:@"For 15 minutes" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if(grouped){
+    if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:@"Snoozed"]) {
@@ -673,7 +940,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"For 1 Hour" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if(grouped){
+    if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:@"Snoozed"]) {
@@ -710,7 +977,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"For 4 Hour" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if(grouped){
+    if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:@"Snoozed"]) {
@@ -747,7 +1014,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"For 8 Hours" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if(grouped){
+    if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:@"Snoozed"]) {
@@ -784,7 +1051,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }]];
   /*[alert addAction:[UIAlertAction actionWithTitle:@"Until DND is turned off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if(grouped){
+    if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
@@ -811,7 +1078,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
     [alert addAction:[UIAlertAction actionWithTitle:@"Specific time" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-        [alertController setTitle:@"Snooze until:"]; //\n\n\n\n\n\n\n\n\n\n\n\n\n\n
+        [alertController setTitle:@"Snooze until:"];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         UIDatePicker *picker = [[UIDatePicker alloc] init];
         [picker setDatePickerMode:UIDatePickerModeDateAndTime];
@@ -961,7 +1228,8 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
             NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", senderFix.request.content.header];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
-        PCPersistentTimer *PersistentTimer = [%c(PCPersistentTimer) alloc];
+        #pragma mark PCPersistentTimer setup
+        /*PCPersistentTimer *PersistentTimer = [%c(PCPersistentTimer) alloc];
         PCSimpleTimer *simpleTimer = MSHookIvar<PCSimpleTimer *>(PersistentTimer, "_simpleTimer");
         NSRunLoop *timerRunLoop = MSHookIvar<NSRunLoop *>(simpleTimer, "_timerRunLoop");
         NSDictionary* userInfo = @{@"request" : senderFix.request};
@@ -970,27 +1238,30 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:timerRunLoop];
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
+        [timerShow scheduleInRunLoop:timerRunLoop];*/
+
+        #pragma mark NSTimer
+        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(senderFix.request, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:senderFix.request];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
     }
 }
 
-%new
+#pragma mark PCPersistentTimer selector
+/*%new
 -(void)timerOperations:(PCPersistentTimer *)timer {
     NSDictionary* userInfo = timer.userInfo;
     NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
     processEntry(request, 0, nil);
     [[AXNManager sharedInstance] showNotificationRequest:request];
-}
+}*/
 %end
 
 /*@interface DNDState : NSObject
@@ -1013,25 +1284,6 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 }
 %end*/
 
-/*
-static bool shouldStopRequest(NCNotificationRequest *request) {
-  bool stop = NO;
-  NSMutableArray *removeObjects = [[NSMutableArray alloc] init];
-  for (NSDictionary *entry in (NSArray *)config[@"entries"]) {
-    int interval = [[NSDate date] timeIntervalSince1970];
-    if ([(NSString *)request.sectionIdentifier isEqualToString:(NSString *)entry[@"id"]] && (interval < [entry[@"timeStamp"] intValue] || [entry[@"timeStamp"] intValue] == -1)) {
-      stop = YES;
-    } else if (interval > [entry[@"timeStamp"] intValue] && [entry[@"timeStamp"] intValue] != -1) {
-      [removeObjects addObject:entry];
-    }
-  }
-  if (removeObjects) {
-    [config[@"entries"] removeObjectsInArray:removeObjects];
-    [config writeToFile:configPath atomically:YES];
-  }
-  return stop;
-}
-*/
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
@@ -1246,6 +1498,7 @@ static void preferencesChanged()
     reloadPrefs();
 
     enabled = boolValueForKey(@"Enabled", YES);
+    enabledForDND = boolValueForKey(@"Enabled", NO);
     vertical = boolValueForKey(@"Vertical", NO);
     hapticFeedback = boolValueForKey(@"HapticFeedback", YES);
     badgesEnabled = boolValueForKey(@"BadgesEnabled", YES);
@@ -1278,7 +1531,7 @@ static void preferencesChanged()
         CFNotificationCenterGetDarwinNotifyCenter(),
         &observer,
         (CFNotificationCallback)preferencesChanged,
-        (CFStringRef)@"me.snoozer.axon/ReloadPrefs",
+        (CFStringRef)@"com.miwix.selenium/ReloadPrefs",
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
@@ -1294,6 +1547,13 @@ static void preferencesChanged()
         return;
     }
 
+    NSString *path = @"/var/mobile/Library/Selenium/config.plist";
+    NSString *pathDefault = @"/Library/PreferenceBundles/AutoRedial.bundle/defaults.plist";
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:path]) {
+        [fileManager copyItemAtPath:pathDefault toPath:path error:nil];
+    }
+
     #pragma mark my addition
 
     NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
@@ -1307,7 +1567,9 @@ static void preferencesChanged()
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[]} writeToFile:configPath atomically:YES];
+        [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} writeToFile:configPath atomically:YES];
     }
-    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 }

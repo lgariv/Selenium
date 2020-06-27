@@ -1,5 +1,6 @@
 #import "Protocol.h"
 #import <WebKit/WebKit.h>
+#import <objc/runtime.h>
 
 @interface BBBulletin : NSObject
 
@@ -21,12 +22,11 @@
 
 @property (nonatomic,readonly) UIImage * icon;
 @property (nonatomic,copy,readonly) NSString * header;
-@property (nonatomic,copy,readonly) NSString * title;
-@property (nonatomic,copy,readonly) NSString * message;                                    //@synthesize message=_message - In the implementation block
 
 @end
 
 @interface NCNotificationRequest : NSObject
+
 @property (nonatomic,readonly) NCNotificationContent * content;
 @property (nonatomic,copy,readonly) NSString * sectionIdentifier;
 @property (nonatomic,copy,readonly) NSString * notificationIdentifier;
@@ -34,7 +34,7 @@
 @property (nonatomic,copy,readonly) NSString * categoryIdentifier;
 @property (nonatomic,readonly) BBBulletin * bulletin;
 @property (nonatomic,readonly) NSDate * timestamp;
-+(id)notificationRequestWithNotificationId:(id)arg1;
+
 @end
 
 @interface NCCoalescedNotification : NSObject
@@ -68,6 +68,7 @@
 -(void)clearAllCoalescingControlsCells;
 -(void)clearAll;
 -(UICollectionView*)collectionView;
+-(void)_resetNotificationsHistory;
 
 @end
 

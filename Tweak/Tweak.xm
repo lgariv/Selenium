@@ -22,6 +22,20 @@ CGFloat spacing;
 
 NSDictionary *prefs = nil;
 
+#pragma mark localized strings
+static NSBundle *tweakBundle;
+static NSString *SNOOZEN;
+static NSString *SNOOZENS;
+static NSString *SNOOZE;
+static NSString *SNOOZED;
+static NSString *fMINUTES;
+static NSString *oneHOUR;
+static NSString *fourHOURS;
+static NSString *eightHOURS;
+static NSString *sTIME;
+static NSString *SNOOZEU;
+static NSString *CANCEL;
+
 void updateViewConfiguration() {
     if (initialized && [AXNManager sharedInstance].view) {
         [AXNManager sharedInstance].view.hapticFeedback = hapticFeedback;
@@ -342,7 +356,7 @@ void updateViewConfiguration() {
 -(void)_setDisplayedImage:(UIImage *)image
 {
     %orig;
-        [[AXNManager sharedInstance] updateWallpaperColors:image];
+        //[[AXNManager sharedInstance] updateWallpaperColors:image];
 }
 
 %end
@@ -399,7 +413,7 @@ UIButton *newButton;
 UIImageView *iconView;
 
 %hook NCNotificationListCellActionButtonsView
--(void)_layoutButtonsStackView {
+-(void)layoutSubviews {
     %orig;
 
     // Get the options StackView array
@@ -409,7 +423,7 @@ UIImageView *iconView;
     // Less than 3 means the left option pannel is opened or the right one is already processed
     if (buttonsArray.count == 3) {
         // Replace the View option 
-        buttonsArray[1].title = @"Snooze";
+        buttonsArray[1].title = SNOOZE;
         [buttonsArray[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
         [buttonsArray[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
         /*[iconView removeFromSuperview];
@@ -462,8 +476,8 @@ UIImageView *iconView;
 //static double minutesLeft;
 static double secondsLeft;
 
-static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
-static NSMutableDictionary *config;
+//static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
+static NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
   NSString *req = [NSString stringWithFormat:@"%@", request];
@@ -491,7 +505,8 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
     [entries addObject:info];
   }
   [config setValue:entries forKey:@"snoozedCache"];
-  [config writeToFile:configPath atomically:YES];
+  //[config writeToFile:configPath atomically:YES];
+  [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
@@ -536,7 +551,8 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }
   [config setValue:entries forKey:@"entries"];
-  [config writeToFile:configPath atomically:YES];
+  //[config writeToFile:configPath atomically:YES];
+  [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -633,7 +649,8 @@ static void setStateForDND(bool state) {
         isEnabled = @{@"DNDEnabled": @NO};
     }
 	[config setValue:isEnabled forKey:@"DNDEnabled"];
-	[config writeToFile:configPath atomically:YES];
+	//[config writeToFile:configPath atomically:YES];
+	[[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
 }*/
 
 /*static void processEntryDND(NCNotificationRequest *request) {
@@ -661,7 +678,8 @@ static void setStateForDND(bool state) {
     }
   }
   [config setValue:entries forKey:@"DND"];
-  [config writeToFile:configPath atomically:YES];
+  //[config writeToFile:configPath atomically:YES];
+  [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
 }
 
 static bool shouldStopRequest(NCNotificationRequest *request) {
@@ -677,7 +695,8 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
   }
   if (removeObjects) {
     [config[@"DND"] removeObjectsInArray:removeObjects];
-    [config writeToFile:configPath atomically:YES];
+    //[config writeToFile:configPath atomically:YES];
+    [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
   }
   return stop;
 }
@@ -864,7 +883,8 @@ static void preferencesChanged();
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    static NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+    //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
@@ -896,23 +916,23 @@ static void preferencesChanged();
     BOOL grouped;
     if (cellListView.grouped) {
         grouped = YES;
-        alert = [UIAlertController alertControllerWithTitle:@"Snooze Notifications" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        alert = [UIAlertController alertControllerWithTitle:SNOOZENS message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     } else {
         grouped = NO;
-        alert = [UIAlertController alertControllerWithTitle:@"Snooze Notification" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        alert = [UIAlertController alertControllerWithTitle:SNOOZEN message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     }
 
-  [alert addAction:[UIAlertAction actionWithTitle:@"For 15 minutes" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+  [alert addAction:[UIAlertAction actionWithTitle:fMINUTES style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
-            processEntry(request, 5, nil);
+            processEntry(request, 900, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:5]
+        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -924,11 +944,11 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+        if (![requestToProcess.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:5]
+        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -936,15 +956,15 @@ static void preferencesChanged();
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
-        processEntry(requestToProcess, 5, nil);
+        processEntry(requestToProcess, 900, nil);
     }
   }]];
-  [alert addAction:[UIAlertAction actionWithTitle:@"For 1 Hour" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+  [alert addAction:[UIAlertAction actionWithTitle:oneHOUR style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, 3600, nil);
@@ -961,8 +981,8 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+        if (![requestToProcess.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
         NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
@@ -976,12 +996,12 @@ static void preferencesChanged();
         processEntry(requestToProcess, 3600, nil);
     }
   }]];
-  [alert addAction:[UIAlertAction actionWithTitle:@"For 4 Hour" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+  [alert addAction:[UIAlertAction actionWithTitle:fourHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, 14400, nil);
@@ -998,8 +1018,8 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+        if (![requestToProcess.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
         NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
@@ -1013,12 +1033,12 @@ static void preferencesChanged();
         processEntry(requestToProcess, 14400, nil);
     }
   }]];
-  [alert addAction:[UIAlertAction actionWithTitle:@"For 8 Hours" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+  [alert addAction:[UIAlertAction actionWithTitle:eightHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, 28800, nil);
@@ -1035,8 +1055,8 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+        if (![requestToProcess.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
         NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
@@ -1055,8 +1075,8 @@ static void preferencesChanged();
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+        if (![requestToProcess.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
         processEntry(requestToProcess, -2, nil);
@@ -1064,8 +1084,8 @@ static void preferencesChanged();
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:@"Until I leave these location" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-    if (![requestToProcess.content.header containsString:@"Snoozed"]) {
-        NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", requestToProcess.content.header];
+    if (![requestToProcess.content.header containsString:SNOOZED]) {
+        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
         [requestToProcess.content setValue:newTitle forKey:@"_header"];
     }
     [NSTimer scheduledTimerWithTimeInterval:86400
@@ -1076,9 +1096,9 @@ static void preferencesChanged();
     processEntry(requestToProcess, 86400, nil);
   }]];*/
 
-    [alert addAction:[UIAlertAction actionWithTitle:@"Specific time" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [alert addAction:[UIAlertAction actionWithTitle:sTIME style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-        [alertController setTitle:@"Snooze until:"];
+        [alertController setTitle:SNOOZEU];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         UIDatePicker *picker = [[UIDatePicker alloc] init];
         [picker setDatePickerMode:UIDatePickerModeDateAndTime];
@@ -1091,7 +1111,8 @@ static void preferencesChanged();
         CGFloat margin = 4.0F;
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
         [button setBackgroundColor:[UIColor systemBlueColor]];
-        [button setTitle:@"Snooze" forState:UIControlStateNormal];
+        [button setTitle:SNOOZE forState:UIControlStateNormal];
+        //[button setTitle:@"Snooze" forState:UIControlStateNormal];
         button.titleLabel.font = [UIFont systemFontOfSize:19];
         [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         button.request = requestToProcess;
@@ -1138,22 +1159,32 @@ static void preferencesChanged();
 
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
-        for (UIWindow *window in [UIApplication sharedApplication].windows) {
+        // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+
+        // That's how you should do it in iOS 13.
+        /*for (UIWindow *window in [UIApplication sharedApplication].windows) {
             if (window.isKeyWindow) {
-                [alertController addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
                 [window.rootViewController presentViewController:alertController animated:YES completion:nil];
                 break;
             }
-        }
+        }*/
     }]];
 
-    for (UIWindow *window in [UIApplication sharedApplication].windows) {
+    // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
+    [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+    [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+
+    // That's how you should do it in iOS 13.
+    /*for (UIWindow *window in [UIApplication sharedApplication].windows) {
         if (window.isKeyWindow) {
-            [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
             [window.rootViewController presentViewController:alert animated:YES completion:nil];
             break;
         }
-    }
+    }*/
 }
 
 %new
@@ -1206,8 +1237,8 @@ static void preferencesChanged();
     if(senderFix.grouped) {
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", request.content.header];
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, -1, senderFix.pickerDate);
@@ -1224,8 +1255,8 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
-        if (![senderFix.request.content.header containsString:@"Snoozed"]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", senderFix.request.content.header];
+        if (![senderFix.request.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
@@ -1254,14 +1285,6 @@ static void preferencesChanged();
     }
 }
 
-#pragma mark PCPersistentTimer selector
-/*%new
--(void)timerOperations:(PCPersistentTimer *)timer {
-    NSDictionary* userInfo = timer.userInfo;
-    NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
-    processEntry(request, 0, nil);
-    [[AXNManager sharedInstance] showNotificationRequest:request];
-}*/
 %end
 
 /*@interface DNDState : NSObject
@@ -1294,7 +1317,7 @@ static void preferencesChanged();
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
             NCNotificationRequest *argFix = arg1;
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", argFix.content.header];
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
             [argFix.content setValue:newTitle forKey:@"_header"];
             %orig(argFix);
             [[AXNManager sharedInstance] hideNotificationRequest:argFix];
@@ -1317,8 +1340,8 @@ static void preferencesChanged();
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
             NCNotificationRequest *argFix = arg1;
-            if (![argFix.content.header containsString:@"Snoozed"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • Snoozed", argFix.content.header];
+            if (![argFix.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
                 [argFix.content setValue:newTitle forKey:@"_header"];
             }
             %orig(argFix);
@@ -1512,11 +1535,11 @@ static void preferencesChanged()
     verticalPosition = [prefs objectForKey:@"VerticalPosition"] ? [[prefs valueForKey:@"VerticalPosition"] intValue] : 0;
     spacing = [prefs objectForKey:@"Spacing"] ? [[prefs valueForKey:@"Spacing"] floatValue] : 10.0;
     fadeEntireCell = boolValueForKey(@"FadeCell", YES);
-    BOOL dynamicBadges = boolValueForKey(@"dynamicBadges", YES);
+    //BOOL dynamicBadges = boolValueForKey(@"dynamicBadges", YES);
 
-    [AXNManager sharedInstance].style = style;
-    [AXNManager sharedInstance].fadeEntireCell = fadeEntireCell;
-    [AXNManager sharedInstance].dynamicBadges = dynamicBadges;
+    //[AXNManager sharedInstance].style = style;
+    //[AXNManager sharedInstance].fadeEntireCell = fadeEntireCell;
+    //[AXNManager sharedInstance].dynamicBadges = dynamicBadges;
 
 
     updateViewConfiguration();
@@ -1526,6 +1549,32 @@ static void preferencesChanged()
     preferencesChanged();
     
     NSLog(@"[Selenium] init");
+
+    #pragma mark localized strings
+    tweakBundle = [NSBundle bundleWithPath:@"/Library/Application Support/SeleniumExtra.bundle"];
+    SNOOZEN = [tweakBundle localizedStringForKey:@"SNOOZEN" value:@"" table:nil];
+    SNOOZENS = [tweakBundle localizedStringForKey:@"SNOOZENS" value:@"" table:nil];
+    SNOOZE = [tweakBundle localizedStringForKey:@"SNOOZE" value:@"" table:nil];
+    SNOOZED = [tweakBundle localizedStringForKey:@"SNOOZED" value:@"" table:nil];
+    fMINUTES = [tweakBundle localizedStringForKey:@"fMINUTES" value:@"" table:nil];
+    oneHOUR = [tweakBundle localizedStringForKey:@"oneHOUR" value:@"" table:nil];
+    fourHOURS = [tweakBundle localizedStringForKey:@"fourHOURS" value:@"" table:nil];
+    eightHOURS = [tweakBundle localizedStringForKey:@"eightHOURS" value:@"" table:nil];
+    sTIME = [tweakBundle localizedStringForKey:@"sTIME" value:@"" table:nil];
+    SNOOZEU = [tweakBundle localizedStringForKey:@"SNOOZEU" value:@"" table:nil];
+    CANCEL = [tweakBundle localizedStringForKey:@"CANCEL" value:@"" table:nil];
+
+    #pragma mark my addition
+    if (![[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] isKindOfClass:[%c(NSDictionary) class]]) {
+        //[manager createFileAtPath:configPath contents:nil attributes:attributes];
+        NSMutableDictionary *configInitial = [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} mutableCopy];
+        [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:configInitial] forKey:@"dictionaryKey"];
+        NSLog(@"[Selenium] IF");
+        NSLog(@"[Selenium] configInitial:%@",[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]);
+    } else {
+        NSLog(@"[Selenium] ELSE");
+        NSLog(@"[Selenium] config:%@",[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]);
+    }
 
     CFNotificationCenterAddObserver(
         CFNotificationCenterGetDarwinNotifyCenter(),
@@ -1547,28 +1596,13 @@ static void preferencesChanged()
         return;
     }
 
-    NSString *path = @"/var/mobile/Library/Selenium/config.plist";
+    /*NSString *path = @"/var/mobile/Library/Selenium/config.plist";
     NSString *pathDefault = @"/Library/PreferenceBundles/AutoRedial.bundle/defaults.plist";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     if (![fileManager fileExistsAtPath:path]) {
         [fileManager copyItemAtPath:pathDefault toPath:path error:nil];
-    }
+    }*/
 
-    #pragma mark my addition
-
-    NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
-    [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileOwnerAccountID];
-    [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileGroupOwnerAccountID];
-
-    NSFileManager *manager = [NSFileManager defaultManager];
-
-    if (![manager fileExistsAtPath:configPath]) {
-        if(![manager fileExistsAtPath:configPath.stringByDeletingLastPathComponent isDirectory:nil]) {
-            [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
-        }
-        [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} writeToFile:configPath atomically:YES];
-    }
 
     //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);

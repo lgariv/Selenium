@@ -1,0 +1,24 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>Snooze Notification</string>
+	<key>SNOOZENS</key>
+	<string>Snooze Notifications</string>
+	<key>SNOOZE</key>
+	<string>Snooze</string>
+	<key>SNOOZED</key>
+	<string>Snoozed</string>
+	<key>fMINUTES</key>
+	<string>For 15 Minutes</string>
+	<key>oneHOUR</key>
+	<string>For 1 Hour</string>
+	<key>fourHOURS</key>
+	<string>For 4 Hours</string>
+	<key>eightHOURS</key>
+	<string>For 8 Hours</string>
+	<key>sTIME</key>
+	<string>Specific Time</string>
+	<key>SNOOZEU</key>
+	<string>Snooze Until</string>
+	<key>CANCEL</key>
+	<string>Cancel</string>
+</dict>

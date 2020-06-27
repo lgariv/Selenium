@@ -4,6 +4,9 @@ Depends: mobilesubstrate, firmware (>= 13.0)
 Conflicts: me.nepeta.axon, com.hackyouriphone.axon
 Version: 0.0.1
 Architecture: iphoneos-arm
+Depiction: https://lgariv.github.io/LaVie/depictions/?p=com.miwix.selenium
+Description: Focus on what matters ⏱
+Icon: https://lgariv.github.io/LaVie/depictions/com.miwix.selenium/icon.png
 Maintainer: Lavie Gariv
-Author: Nepeta 
+Author: Lavie Gariv
 Section: Tweaks

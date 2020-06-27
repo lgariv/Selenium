@@ -1,0 +1,24 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>דחה התראה</string>
+	<key>SNOOZENS</key>
+	<string>דחה התראות</string>
+	<key>SNOOZE</key>
+	<string>דחה</string>
+	<key>SNOOZED</key>
+	<string>נדחה</string>
+	<key>fMINUTES</key>
+	<string>ל15 דקות</string>
+	<key>oneHOUR</key>
+	<string>לשעה אחת</string>
+	<key>fourHOURS</key>
+	<string>ל4 שעות</string>
+	<key>eightHOURS</key>
+	<string>ל8 שעות</string>
+	<key>sTIME</key>
+	<string>זמן ספציפי</string>
+	<key>SNOOZEU</key>
+	<string>Snooze Until</string>
+	<key>CANCEL</key>
+	<string>ביטול</string>
+</dict>

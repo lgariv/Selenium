@@ -413,6 +413,8 @@ UIView *newView;
 UIButton *newButton;
 UIImageView *iconView;
 
+static NSDictionary *info;
+
 %hook NCNotificationListCellActionButtonsView
 -(void)layoutSubviews {
     %orig;
@@ -469,7 +471,7 @@ UIImageView *iconView;
 
 %new
 - (void)swipedUp:(id)arg1 {
-    NSDictionary *info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
+    info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
@@ -1098,6 +1100,9 @@ static void preferencesChanged();
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1143,6 +1148,7 @@ static void preferencesChanged();
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
@@ -1226,6 +1232,9 @@ static void preferencesChanged();
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1271,6 +1280,7 @@ static void preferencesChanged();
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
@@ -1354,6 +1364,9 @@ static void preferencesChanged();
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1399,6 +1412,7 @@ static void preferencesChanged();
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
@@ -1482,6 +1496,9 @@ static void preferencesChanged();
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1527,6 +1544,7 @@ static void preferencesChanged();
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
@@ -1699,6 +1717,9 @@ static void preferencesChanged();
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1746,6 +1767,7 @@ static void preferencesChanged();
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
 
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
@@ -1914,6 +1936,9 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
         /*UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -1959,6 +1984,7 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
@@ -2039,6 +2065,11 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
 }
 
 %new
+-(void)tappedToChange:(UIButton *)sender {
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
+}
+
+%new
 -(void)buttonDown:(UIButton *)sender {
     [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
         sender.alpha = 0.5f;
@@ -2061,6 +2092,9 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
         UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
         SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
         view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
 
         UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
         NSDictionary *attribsSnoozedLabel = @{
@@ -2107,6 +2141,7 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
         [view addSubview:pillSnoozedLabel];
         [view addSubview:pillSnoozedForUntilLabel];
         [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
         CGFloat combinedSize;
         view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
         combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;

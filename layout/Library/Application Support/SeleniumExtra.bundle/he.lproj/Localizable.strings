@@ -21,4 +21,6 @@
 	<string>דחה עד ל</string>
 	<key>CANCEL</key>
 	<string>ביטול</string>
+	<key>TAPCHANGE</key>
+	<string>הקש כדי לשנות</string>
 </dict>

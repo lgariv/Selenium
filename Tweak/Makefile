@@ -1,13 +1,10 @@
 include $(THEOS)/makefiles/common.mk
 
-ARCHS = arm64 arm64e 
-TARGET = iphone:13.5:12.2
-
 TWEAK_NAME = Selenium
 $(TWEAK_NAME)_FILES = Tweak.xm $(wildcard AXN*.m)
 $(TWEAK_NAME)_FRAMEWORKS += QuartzCore WebKit MediaPlayer UIKit
 $(TWEAK_NAME)_PRIVATE_FRAMEWORKS = ControlCenterUIKit
-ADDITIONAL_OBJCFLAGS = -fobjc-arc
+ADDITIONAL_OBJCFLAGS = -fobjc-arc -Wno-unused-variable
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

@@ -18,7 +18,9 @@
 	<key>sTIME</key>
 	<string>Specific Time</string>
 	<key>SNOOZEU</key>
-	<string>Snooze Until</string>
+	<string>Snooze Until </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
 	<key>CANCEL</key>
 	<string>Cancel</string>
+	<key>TAPCHANGE</key>
+	<string>Tap To Change</string>
 </dict>

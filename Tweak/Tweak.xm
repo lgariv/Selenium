@@ -35,6 +35,7 @@ static NSString *eightHOURS;
 static NSString *sTIME;
 static NSString *SNOOZEU;
 static NSString *CANCEL;
+static NSString *TAPCHANGE;
 
 void updateViewConfiguration() {
     if (initialized && [AXNManager sharedInstance].view) {
@@ -470,6 +471,8 @@ UIImageView *iconView;
 - (void)swipedUp:(id)arg1 {
     NSDictionary *info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
 }
 %end
 
@@ -477,82 +480,171 @@ UIImageView *iconView;
 static double secondsLeft;
 
 //static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
-static NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+//NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
+    NSLog(@"[Selenium] START snoozeStore");
+  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+    NSLog(@"[Selenium] snoozeStore 1");
   NSString *req = [NSString stringWithFormat:@"%@", request];
+    NSLog(@"[Selenium] snoozeStore 2");
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
+    NSLog(@"[Selenium] snoozeStore 3");
   bool add = YES;
+    NSLog(@"[Selenium] snoozeStore 4");
   NSDictionary *remove = nil;
+  NSDate *removeDate = nil;
+    NSLog(@"[Selenium] snoozeStore 5");
   for (NSMutableDictionary *entry in entries) {
+    NSLog(@"[Selenium] snoozeStore 6");
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
+    NSLog(@"[Selenium] snoozeStore 7");
     [parts removeObject:parts[0]];
+    NSLog(@"[Selenium] snoozeStore 8");
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
+    NSLog(@"[Selenium] snoozeStore 9");
     if ([req containsString:combinedparts]) {
-        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
-        entry[@"timeToRemove"] = removeDate;
+    NSLog(@"[Selenium] snoozeStore 10");
+    NSLog(@"[Selenium] snoozeStore 11");
+        /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+    NSLog(@"[Selenium] snoozeStore 12");
+        #pragma mark storeSnoozed crash
+        //entry[@"timeToRemove"] = removeDate;
+    NSLog(@"[Selenium] snoozeStore 13");
         remove = entry;
+    NSLog(@"[Selenium] snoozeStore 14");
         add = NO;
+    NSLog(@"[Selenium] snoozeStore 15");
+        break;
+    NSLog(@"[Selenium] snoozeStore 16");
     }
+    NSLog(@"[Selenium] snoozeStore 17");
   }
+    NSLog(@"[Selenium] snoozeStore 18");
   if (shouldRemove && (remove != nil)) {
+    NSLog(@"[Selenium] snoozeStore 19");
     [entries removeObject:remove];
+    NSLog(@"[Selenium] snoozeStore 20");
   }
+    NSLog(@"[Selenium] snoozeStore 21");
   if (add) {
+    NSLog(@"[Selenium] snoozeStore 22");
     NSDictionary *info;
-    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+    NSLog(@"[Selenium] snoozeStore 23");
+    /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+    NSLog(@"[Selenium] snoozeStore 24");
     info = @{@"id": req, @"timeToRemove": removeDate};
+    NSLog(@"[Selenium] snoozeStore 25");
     [entries addObject:info];
+    NSLog(@"[Selenium] snoozeStore 26");
   }
+    NSLog(@"[Selenium] snoozeStore 26");
   [config setValue:entries forKey:@"snoozedCache"];
+    NSLog(@"[Selenium] snoozeStore 27");
   //[config writeToFile:configPath atomically:YES];
+    NSLog(@"[Selenium] snoozeStore 28");
   [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
+    NSLog(@"[Selenium] snoozeStore 29");
+  //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
+    NSLog(@"[Selenium] START processEntry");
+  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    NSLog(@"[Selenium] 1");
   NSString *req = [NSString stringWithFormat:@"%@", request];
+    NSLog(@"[Selenium] 2");
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
+    NSLog(@"[Selenium] 3");
   bool add = YES;
+    NSLog(@"[Selenium] 4");
   NSDictionary *remove = nil;
+    NSLog(@"[Selenium] 5");
   for (NSMutableDictionary *entry in entries) {
+  //for (NSDictionary __strong *entry in entries) {
+      //entry = [entry mutableCopy];
+    NSLog(@"[Selenium] 6");
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
+    NSLog(@"[Selenium] 7");
     [parts removeObject:parts[0]];
+    NSLog(@"[Selenium] 8");
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
+    NSLog(@"[Selenium] 9");
     if ([req containsString:combinedparts]) {
+    NSLog(@"[Selenium] 10");
         if (interval < 0) {
-            if (interval == -1)
-            entry[@"timeStamp"] = @([inputDate timeIntervalSince1970]);
-            else if (interval == -2)
-            entry[@"timeStamp"] = @(-2);
+    NSLog(@"[Selenium] 11");
+            if (interval == -1) {
+    NSLog(@"[Selenium] 12");
+                [entry mutableCopy][@"timeStamp"] = @([inputDate timeIntervalSince1970]);
+    NSLog(@"[Selenium] 13");
+            }
+            else if (interval == -2) {
+    NSLog(@"[Selenium] 14");
+                [entry mutableCopy][@"timeStamp"] = @(-2);
+    NSLog(@"[Selenium] 15");
+            }
         } else if (interval == 0) {
+    NSLog(@"[Selenium] 16");
             remove = entry;
+    NSLog(@"[Selenium] 17");
         } else {
-            entry[@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
+    NSLog(@"[Selenium] 18");
+            #pragma mark storeSnoozed crash
+            [entry mutableCopy][@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
+    NSLog(@"[Selenium] 19");
         }
+    NSLog(@"[Selenium] 20");
         add = NO;
+    NSLog(@"[Selenium] 21");
     }
+    NSLog(@"[Selenium] 22");
   }
+    NSLog(@"[Selenium] 23");
   if (remove) {
+    NSLog(@"[Selenium] 24");
     [entries removeObject:remove];
+    NSLog(@"[Selenium] 25");
   }
+    NSLog(@"[Selenium] 26");
   if (add) {
+    NSLog(@"[Selenium] 27");
+    #pragma mark storeSnoozed crash
+    NSLog(@"[Selenium] 28");
     storeSnoozed(request, NO);
+    NSLog(@"[Selenium] 29");
     NSDictionary *info;
+    NSLog(@"[Selenium] 28");
     if (interval < 0) {
+    NSLog(@"[Selenium] 29");
         if (interval == -1)
+    NSLog(@"[Selenium] 30");
         info = @{@"id": req, @"timeStamp": @([inputDate timeIntervalSince1970])};
+    NSLog(@"[Selenium] 31");
         if (interval == -2)
+    NSLog(@"[Selenium] 32");
         info = @{@"id": req, @"timeStamp": @(-2)};
+    NSLog(@"[Selenium] 33");
     } else if (interval != 0) {
+    NSLog(@"[Selenium] 34");
         info = @{@"id": req, @"timeStamp": @([[NSDate date] timeIntervalSince1970] + interval)};
+    NSLog(@"[Selenium] 35");
     }
+    NSLog(@"[Selenium] 36");
     if (info) {
+    NSLog(@"[Selenium] 37");
       [entries addObject:info];
+    NSLog(@"[Selenium] 38");
     }
+    NSLog(@"[Selenium] 39");
   }
+    NSLog(@"[Selenium] 40");
   [config setValue:entries forKey:@"entries"];
+    NSLog(@"[Selenium] 41");
   //[config writeToFile:configPath atomically:YES];
   [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
+    NSLog(@"[Selenium] 42");
+  //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -605,7 +697,10 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @interface SButton : UIButton
 @property (nonatomic,retain) NCNotificationRequest *request;    
 @property (nonatomic,retain) NCNotificationListCell *cell;    
-@property (nonatomic,retain) NSDate *pickerDate;    
+@property (nonatomic,retain) SBRingerPillView *pillView;    
+@property (nonatomic,retain) UILabel *pillViewUntilLabel;    
+@property (nonatomic,retain) UIDatePicker *datePicker;
+@property (nonatomic,retain) NSDate *pickerDate;
 @property (nonatomic,retain) UIAlertController *controllerToDismiss;    
 @property (nonatomic,readwrite) BOOL grouped;    
 @end
@@ -880,6 +975,45 @@ static void preferencesChanged();
 -(void)setAlertItem:(SBAlertItem *)arg1 ;
 @end
 
+@interface UIHoursStepper : SButton
+@property (nonatomic,retain) SButton *containingButton;
+@property (nonatomic,retain) NSDate *stepperTargetDate;
+@property (nonatomic,retain) UILabel *untilLabel;
+@property (nonatomic,retain) UILabel *hoursLabel;
+@property (nonatomic,retain) UIStepper *hoursStepper;
+- (UIHoursStepper *)initWithThisFrame:(CGRect)frame;
+@end
+
+@interface SBRingerPillView : UIView
+@end
+
+@implementation UIHoursStepper
+- (UIHoursStepper *)initWithThisFrame:(CGRect)frame {
+    self = [[super superclass] buttonWithType:UIButtonTypeSystem];
+    UIStepper *stepper = [[UIStepper alloc] initWithFrame:frame];
+	stepper.continuous = NO;
+    [self addSubview:stepper];
+	return self;
+
+    /*self = [[super superclass] buttonWithType:UIButtonTypeSystem];
+    self.frame = frame;
+    //[self setBackgroundColor:[UIColor systemGrayColor]];
+    [self setAlpha:1];
+    self.layer.cornerRadius = 12.5;
+
+    self.containingButton = [SButton buttonWithType:UIButtonTypeSystem];
+    self.containingButton.frame = frame;
+    [self.containingButton setBackgroundColor:[UIColor systemGrayColor]];
+    [self.containingButton setAlpha:0.1];
+    self.containingButton.layer.cornerRadius = 12.5;
+
+    [self addSubview:self.containingButton];
+
+    return self;*/
+    //[self addConstraint:[NSLayoutConstraint constraintWithItem:self.containingButton attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:0]];
+}
+@end
+
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
@@ -923,6 +1057,8 @@ static void preferencesChanged();
     }
 
   [alert addAction:[UIAlertAction actionWithTitle:fMINUTES style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
@@ -958,8 +1094,99 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
         processEntry(requestToProcess, 900, nil);
     }
+            #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fMINUTES attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [fMINUTES sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:oneHOUR style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
@@ -995,8 +1222,99 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
         processEntry(requestToProcess, 3600, nil);
     }
+            #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:oneHOUR attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [oneHOUR sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:fourHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
@@ -1032,8 +1350,99 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
         processEntry(requestToProcess, 14400, nil);
     }
+            #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fourHOURS attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [fourHOURS sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
   }]];
   [alert addAction:[UIAlertAction actionWithTitle:eightHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
@@ -1069,6 +1478,95 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
         processEntry(requestToProcess, 28800, nil);
     }
+        #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:eightHOURS attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [eightHOURS sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
   }]];
   /*[alert addAction:[UIAlertAction actionWithTitle:@"Until DND is turned off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
@@ -1100,10 +1598,34 @@ static void preferencesChanged();
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
         [alertController setTitle:SNOOZEU];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        NSLocale *locale = [NSLocale currentLocale];
         UIDatePicker *picker = [[UIDatePicker alloc] init];
+        picker.locale = locale; 
         [picker setDatePickerMode:UIDatePickerModeDateAndTime];
-        [picker setMinuteInterval:15];
-        [picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
+        [picker setMinuteInterval:5];
+        #pragma mark setMinimumDate fix test
+        NSDateFormatter *testFormatter = [[NSDateFormatter alloc] init];
+        testFormatter.formatterBehavior = NSDateFormatterBehavior10_4;
+        testFormatter.dateStyle = NSDateFormatterShortStyle;
+        testFormatter.timeStyle = NSDateFormatterShortStyle;
+        [testFormatter setDateFormat:@"HH"];
+        NSString *stringResult = [testFormatter stringForObjectValue:[NSDate date]];
+        NSString *stringResultStart = [NSString stringWithFormat:@"%@:00:00",stringResult];
+        [testFormatter setDateFormat:@"Z"];
+        NSString *stringResultZone = [testFormatter stringForObjectValue:[NSDate date]];
+        [testFormatter setDateFormat:@"yyyy-MM-dd'T'"];
+        NSString *stringResultRest = [testFormatter stringForObjectValue:[NSDate date]];
+        [testFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZ"];
+        NSString *stringResultLoopStart = [NSString stringWithFormat:@"%@%@%@",stringResultRest,stringResultStart,stringResultZone];
+        NSDate *minimumDate = [testFormatter dateFromString:stringResultLoopStart];
+        for (char i=0; i<13; i++) {
+            if ([[NSDate date] timeIntervalSinceDate:minimumDate] < 0) {
+                break;
+            } else {
+                minimumDate = [NSDate dateWithTimeInterval:300 sinceDate:minimumDate];
+            }
+        }
+        [picker setMinimumDate:minimumDate/*[NSDate dateWithTimeInterval:300 sinceDate:[NSDate date]]*/];
         [picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
         [alertController.view addSubview:picker];
 
@@ -1117,7 +1639,8 @@ static void preferencesChanged();
         [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         button.request = requestToProcess;
         button.controllerToDismiss = alertController;
-        button.pickerDate = picker.date;
+        button.pickerDate = [self performSelector:@selector(getDatePickerValue:) withObject:picker];
+        button.datePicker = picker;
         button.cell = cellToCapture;
         button.grouped = grouped;
         [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
@@ -1171,10 +1694,312 @@ static void preferencesChanged();
                 break;
             }
         }*/
+
+        #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+        formatter.dateStyle = NSDateFormatterShortStyle;
+        formatter.timeStyle = NSDateFormatterShortStyle;
+        [formatter setDateFormat:@"HH:mm"];
+        NSString *result = [formatter stringForObjectValue:button.pickerDate];
+        NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+        [parts removeObject:parts[0]];
+        NSString *UNTIL = [parts componentsJoinedByString:@" "];
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,result] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+        button.pillViewUntilLabel = pillSnoozedForUntilLabel;
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+
+        /*UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];*/
+        button.pillView = view;
     }]];
 
+    /*[alert addAction:[UIAlertAction actionWithTitle:sTIME style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
+        CGFloat margin = 4.0F;
+        
+        [alertController setTitle:SNOOZEU];
+        //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        UIHoursStepper *picker = [[UIHoursStepper alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
+        //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
+        //[picker setMinuteInterval:15];
+        //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
+        //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
+        [alertController.view addSubview:picker];
+
+        SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        [button setBackgroundColor:[UIColor systemBlueColor]];
+        [button setTitle:SNOOZE forState:UIControlStateNormal];
+        //[button setTitle:@"Snooze" forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:19];
+        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        button.request = requestToProcess;
+        button.controllerToDismiss = alertController;
+        //button.pickerDate = picker.date;
+        button.cell = cellToCapture;
+        button.grouped = grouped;
+        [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
+        [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
+        [button addTarget:self action:@selector(buttonUp:) forControlEvents:UIControlEventTouchUpInside];
+        button.layer.cornerRadius = 10.5;
+        [alertController.view addSubview:button];
+
+        UIImageView *myImage = [[UIImageView alloc] init];
+        myImage.image = [self imageWithView:cellToCapture];
+        double widthInPoints = myImage.image.size.width;
+        double heightInPoints = myImage.image.size.height;
+        [myImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+        myImage.contentMode = UIViewContentModeScaleAspectFit;
+        
+        SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
+        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
+
+        if (grouped) {
+            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
+        } else {
+            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
+        }
+
+        [button2 setBackgroundColor:[UIColor systemGrayColor]];
+        [button2 setAlpha:0.1f];
+        button2.layer.cornerRadius = 12.5;
+
+        [alertController.view addSubview:button2];
+        [alertController.view addSubview:myImage];
+        myImage.center = button2.center;
+
+        picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
+
+
+        SButton *stepperFrame = [SButton buttonWithType:UIButtonTypeSystem];
+        stepperFrame.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
+        [stepperFrame setAlpha:0.1];
+        stepperFrame.layer.cornerRadius = 12.5;
+UIStackView *stackView = [[UIStackView alloc] initWithFrame:stepperFrame.frame];
+stackView.axis = UILayoutConstraintAxisHorizontal;
+stackView.center = stepperFrame.center;
+stackView.distribution = UIStackViewDistributionEqualSpacing;
+stackView.alignment = UIStackViewAlignmentCenter;
+stackView.spacing = 30;
+stackView.translatesAutoresizingMaskIntoConstraints = false;
+        UIStepper *stepper = [[UIStepper alloc] init];
+        [alertController.view addSubview:stepperFrame];
+        //[alertController.view addSubview:stepper];
+        [stackView addArrangedSubview:stepper];
+        CGFloat stepperMargin = (CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame))/2;
+        CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
+        CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
+        //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
+        CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
+        UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
+        //[alertController.view addSubview:stepperLabel];
+        [stackView addArrangedSubview:stepperLabel];
+        stepperLabel.text = @"TEST";
+
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+20) + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
+        popoverController.sourceView = alertController.view;
+        popoverController.sourceRect = [alertController.view bounds];
+
+        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
+
+        // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+            [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+            [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+        }]];
+        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    }]];*/
+
     // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
-    [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+        #pragma mark pill view
+        /*UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fMINUTES attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [fMINUTES sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+""
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
+                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];*/
+    }]];
     [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
 
     // That's how you should do it in iOS 13.
@@ -1209,6 +2034,11 @@ static void preferencesChanged();
 }
 
 %new
+-(NSDate *)getDatePickerValue:(UIDatePicker *)sender {
+    return [sender date];
+}
+
+%new
 -(void)buttonDown:(UIButton *)sender {
     [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
         sender.alpha = 0.5f;
@@ -1225,6 +2055,101 @@ static void preferencesChanged();
 %new
 -(void)buttonUp:(id)sender {
     SButton *senderFix = sender;
+    senderFix.pickerDate = [self performSelector:@selector(getDatePickerValue:) withObject:senderFix.datePicker];
+
+        #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+        formatter.dateStyle = NSDateFormatterShortStyle;
+        formatter.timeStyle = NSDateFormatterShortStyle;
+        [formatter setDateFormat:@"HH:mm"];
+        NSString *result = [formatter stringForObjectValue:senderFix.pickerDate];
+        NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+        [parts removeObject:parts[0]];
+        NSString *UNTIL = [parts componentsJoinedByString:@" "];
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,result] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
+
     [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
         senderFix.alpha = 1.0f;
     } completion:nil];
@@ -1282,6 +2207,10 @@ static void preferencesChanged();
         [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
+
+        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+        
     }
 }
 
@@ -1309,6 +2238,7 @@ static void preferencesChanged();
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1354,6 +2284,7 @@ static void preferencesChanged();
 
 %hook SBNCScreenController
 -(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1377,6 +2308,7 @@ static void preferencesChanged();
 
 %hook SBNCSoundController
 -(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1400,6 +2332,7 @@ static void preferencesChanged();
 
 %hook SBNotificationBannerDestination
 -(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(/*^block*/id)arg3 {
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1563,6 +2496,7 @@ static void preferencesChanged()
     sTIME = [tweakBundle localizedStringForKey:@"sTIME" value:@"" table:nil];
     SNOOZEU = [tweakBundle localizedStringForKey:@"SNOOZEU" value:@"" table:nil];
     CANCEL = [tweakBundle localizedStringForKey:@"CANCEL" value:@"" table:nil];
+    TAPCHANGE = [tweakBundle localizedStringForKey:@"TAPCHANGE" value:@"" table:nil];
 
     #pragma mark my addition
     if (![[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] isKindOfClass:[%c(NSDictionary) class]]) {

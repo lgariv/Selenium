@@ -977,49 +977,19 @@ static void preferencesChanged();
 -(void)setAlertItem:(SBAlertItem *)arg1 ;
 @end
 
-@interface UIHoursStepper : SButton
-@property (nonatomic,retain) SButton *containingButton;
-@property (nonatomic,retain) NSDate *stepperTargetDate;
-@property (nonatomic,retain) UILabel *untilLabel;
-@property (nonatomic,retain) UILabel *hoursLabel;
-@property (nonatomic,retain) UIStepper *hoursStepper;
-- (UIHoursStepper *)initWithThisFrame:(CGRect)frame;
-@end
-
 @interface SBRingerPillView : UIView
 @end
 
+@interface UIHoursStepper : SButton
+@end
+
 @implementation UIHoursStepper
-- (UIHoursStepper *)initWithThisFrame:(CGRect)frame {
-    self = [[super superclass] buttonWithType:UIButtonTypeSystem];
-    UIStepper *stepper = [[UIStepper alloc] initWithFrame:frame];
-	stepper.continuous = NO;
-    [self addSubview:stepper];
-	return self;
-
-    /*self = [[super superclass] buttonWithType:UIButtonTypeSystem];
-    self.frame = frame;
-    //[self setBackgroundColor:[UIColor systemGrayColor]];
-    [self setAlpha:1];
-    self.layer.cornerRadius = 12.5;
-
-    self.containingButton = [SButton buttonWithType:UIButtonTypeSystem];
-    self.containingButton.frame = frame;
-    [self.containingButton setBackgroundColor:[UIColor systemGrayColor]];
-    [self.containingButton setAlpha:0.1];
-    self.containingButton.layer.cornerRadius = 12.5;
-
-    [self addSubview:self.containingButton];
-
-    return self;*/
-    //[self addConstraint:[NSLayoutConstraint constraintWithItem:self.containingButton attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:0]];
-}
 @end
 
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    static NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
@@ -1829,7 +1799,7 @@ static void preferencesChanged();
         button.pillView = view;
     }]];
 
-    /*[alert addAction:[UIAlertAction actionWithTitle:sTIME style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    /*[alert addAction:[UIAlertAction actionWithTitle:@"STEPPER" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
         CGFloat margin = 4.0F;
         
@@ -1886,32 +1856,30 @@ static void preferencesChanged();
 
         picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
 
-
-        SButton *stepperFrame = [SButton buttonWithType:UIButtonTypeSystem];
-        stepperFrame.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        #pragma mark stepper "cell"
+        UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
         [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
         [stepperFrame setAlpha:0.1];
         stepperFrame.layer.cornerRadius = 12.5;
-UIStackView *stackView = [[UIStackView alloc] initWithFrame:stepperFrame.frame];
+        UIStepper *stepper = [[UIStepper alloc] init];
+        [alertController.view addSubview:stepperFrame];
+        //[alertController.view addSubview:stepper];
+        CGFloat stepperMargin = CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame);
+UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.width)];
 stackView.axis = UILayoutConstraintAxisHorizontal;
 stackView.center = stepperFrame.center;
 stackView.distribution = UIStackViewDistributionEqualSpacing;
 stackView.alignment = UIStackViewAlignmentCenter;
-stackView.spacing = 30;
-stackView.translatesAutoresizingMaskIntoConstraints = false;
-        UIStepper *stepper = [[UIStepper alloc] init];
-        [alertController.view addSubview:stepperFrame];
-        //[alertController.view addSubview:stepper];
-        [stackView addArrangedSubview:stepper];
-        CGFloat stepperMargin = (CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame))/2;
         CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
         CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
         //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
         CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
         UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
         //[alertController.view addSubview:stepperLabel];
-        [stackView addArrangedSubview:stepperLabel];
         stepperLabel.text = @"TEST";
+        [stackView addArrangedSubview:stepperLabel];
+        [stackView addArrangedSubview:stepper];
+        [alertController.view addSubview:stackView];
 
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+20) + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
         UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
@@ -1920,7 +1888,6 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
 
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
-        // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
         [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
             [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
             [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
@@ -1928,7 +1895,6 @@ stackView.translatesAutoresizingMaskIntoConstraints = false;
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
     }]];*/
 
-    // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
     [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
         [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
         [[UIApplication sharedApplication] setIdleTimerDisabled:NO];

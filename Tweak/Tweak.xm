@@ -485,167 +485,91 @@ static double secondsLeft;
 //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
-    NSLog(@"[Selenium] START snoozeStore");
   NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
-    NSLog(@"[Selenium] snoozeStore 1");
   NSString *req = [NSString stringWithFormat:@"%@", request];
-    NSLog(@"[Selenium] snoozeStore 2");
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
-    NSLog(@"[Selenium] snoozeStore 3");
   bool add = YES;
-    NSLog(@"[Selenium] snoozeStore 4");
   NSDictionary *remove = nil;
   NSDate *removeDate = nil;
-    NSLog(@"[Selenium] snoozeStore 5");
   for (NSMutableDictionary *entry in entries) {
-    NSLog(@"[Selenium] snoozeStore 6");
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
-    NSLog(@"[Selenium] snoozeStore 7");
     [parts removeObject:parts[0]];
-    NSLog(@"[Selenium] snoozeStore 8");
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
-    NSLog(@"[Selenium] snoozeStore 9");
     if ([req containsString:combinedparts]) {
-    NSLog(@"[Selenium] snoozeStore 10");
-    NSLog(@"[Selenium] snoozeStore 11");
         /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
-    NSLog(@"[Selenium] snoozeStore 12");
         #pragma mark storeSnoozed crash
         //entry[@"timeToRemove"] = removeDate;
-    NSLog(@"[Selenium] snoozeStore 13");
         remove = entry;
-    NSLog(@"[Selenium] snoozeStore 14");
         add = NO;
-    NSLog(@"[Selenium] snoozeStore 15");
         break;
-    NSLog(@"[Selenium] snoozeStore 16");
     }
-    NSLog(@"[Selenium] snoozeStore 17");
   }
-    NSLog(@"[Selenium] snoozeStore 18");
   if (shouldRemove && (remove != nil)) {
-    NSLog(@"[Selenium] snoozeStore 19");
     [entries removeObject:remove];
-    NSLog(@"[Selenium] snoozeStore 20");
   }
-    NSLog(@"[Selenium] snoozeStore 21");
   if (add) {
-    NSLog(@"[Selenium] snoozeStore 22");
     NSDictionary *info;
-    NSLog(@"[Selenium] snoozeStore 23");
     /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
-    NSLog(@"[Selenium] snoozeStore 24");
     info = @{@"id": req, @"timeToRemove": removeDate};
-    NSLog(@"[Selenium] snoozeStore 25");
     [entries addObject:info];
-    NSLog(@"[Selenium] snoozeStore 26");
   }
-    NSLog(@"[Selenium] snoozeStore 26");
   [config setValue:entries forKey:@"snoozedCache"];
-    NSLog(@"[Selenium] snoozeStore 27");
   //[config writeToFile:configPath atomically:YES];
-    NSLog(@"[Selenium] snoozeStore 28");
   [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
-    NSLog(@"[Selenium] snoozeStore 29");
   //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
-    NSLog(@"[Selenium] START processEntry");
   NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
-    NSLog(@"[Selenium] 1");
   NSString *req = [NSString stringWithFormat:@"%@", request];
-    NSLog(@"[Selenium] 2");
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
-    NSLog(@"[Selenium] 3");
   bool add = YES;
-    NSLog(@"[Selenium] 4");
   NSDictionary *remove = nil;
-    NSLog(@"[Selenium] 5");
   for (NSMutableDictionary *entry in entries) {
   //for (NSDictionary __strong *entry in entries) {
       //entry = [entry mutableCopy];
-    NSLog(@"[Selenium] 6");
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
-    NSLog(@"[Selenium] 7");
     [parts removeObject:parts[0]];
-    NSLog(@"[Selenium] 8");
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
-    NSLog(@"[Selenium] 9");
     if ([req containsString:combinedparts]) {
-    NSLog(@"[Selenium] 10");
         if (interval < 0) {
-    NSLog(@"[Selenium] 11");
             if (interval == -1) {
-    NSLog(@"[Selenium] 12");
                 [entry mutableCopy][@"timeStamp"] = @([inputDate timeIntervalSince1970]);
-    NSLog(@"[Selenium] 13");
             }
             else if (interval == -2) {
-    NSLog(@"[Selenium] 14");
                 [entry mutableCopy][@"timeStamp"] = @(-2);
-    NSLog(@"[Selenium] 15");
             }
         } else if (interval == 0) {
-    NSLog(@"[Selenium] 16");
             remove = entry;
-    NSLog(@"[Selenium] 17");
         } else {
-    NSLog(@"[Selenium] 18");
             #pragma mark storeSnoozed crash
             [entry mutableCopy][@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
-    NSLog(@"[Selenium] 19");
         }
-    NSLog(@"[Selenium] 20");
         add = NO;
-    NSLog(@"[Selenium] 21");
     }
-    NSLog(@"[Selenium] 22");
   }
-    NSLog(@"[Selenium] 23");
   if (remove) {
-    NSLog(@"[Selenium] 24");
     [entries removeObject:remove];
-    NSLog(@"[Selenium] 25");
   }
-    NSLog(@"[Selenium] 26");
   if (add) {
-    NSLog(@"[Selenium] 27");
     #pragma mark storeSnoozed crash
-    NSLog(@"[Selenium] 28");
     storeSnoozed(request, NO);
-    NSLog(@"[Selenium] 29");
     NSDictionary *info;
-    NSLog(@"[Selenium] 28");
     if (interval < 0) {
-    NSLog(@"[Selenium] 29");
         if (interval == -1)
-    NSLog(@"[Selenium] 30");
         info = @{@"id": req, @"timeStamp": @([inputDate timeIntervalSince1970])};
-    NSLog(@"[Selenium] 31");
         if (interval == -2)
-    NSLog(@"[Selenium] 32");
         info = @{@"id": req, @"timeStamp": @(-2)};
-    NSLog(@"[Selenium] 33");
     } else if (interval != 0) {
-    NSLog(@"[Selenium] 34");
         info = @{@"id": req, @"timeStamp": @([[NSDate date] timeIntervalSince1970] + interval)};
-    NSLog(@"[Selenium] 35");
     }
-    NSLog(@"[Selenium] 36");
     if (info) {
-    NSLog(@"[Selenium] 37");
       [entries addObject:info];
-    NSLog(@"[Selenium] 38");
     }
-    NSLog(@"[Selenium] 39");
   }
-    NSLog(@"[Selenium] 40");
   [config setValue:entries forKey:@"entries"];
-    NSLog(@"[Selenium] 41");
   //[config writeToFile:configPath atomically:YES];
   [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
-    NSLog(@"[Selenium] 42");
   //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 

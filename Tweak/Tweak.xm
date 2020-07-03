@@ -482,26 +482,26 @@ static NSDictionary *info;
 static double secondsLeft;
 
 //static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
-//NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+//NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
-  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  NSDate *removeDate = nil;
-  for (NSMutableDictionary *entry in entries) {
+  for (NSMutableDictionary __strong *entry in entries) {
+    entry = [entry mutableCopy];
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
     if ([req containsString:combinedparts]) {
-        /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest *)request timestamp]];
         #pragma mark storeSnoozed crash
-        //entry[@"timeToRemove"] = removeDate;
+        entry[@"timeToRemove"] = removeDate;
         remove = entry;
         add = NO;
-        break;
+        //break;
     }
   }
   if (shouldRemove && (remove != nil)) {
@@ -509,14 +509,13 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
   }
   if (add) {
     NSDictionary *info;
-    /*NSDate **/removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
+    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
     info = @{@"id": req, @"timeToRemove": removeDate};
     [entries addObject:info];
   }
   [config setValue:entries forKey:@"snoozedCache"];
   //[config writeToFile:configPath atomically:YES];
-  [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
-  //[[NSUserDefaults standardUserDefaults] synchronize];
+  [[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
@@ -525,25 +524,25 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  for (NSMutableDictionary *entry in entries) {
+  for (NSMutableDictionary __strong *entry in entries) {
   //for (NSDictionary __strong *entry in entries) {
-      //entry = [entry mutableCopy];
+    entry = [entry mutableCopy];
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
     if ([req containsString:combinedparts]) {
         if (interval < 0) {
             if (interval == -1) {
-                [entry mutableCopy][@"timeStamp"] = @([inputDate timeIntervalSince1970]);
+                entry[@"timeStamp"] = @([inputDate timeIntervalSince1970]);
             }
-            else if (interval == -2) {
-                [entry mutableCopy][@"timeStamp"] = @(-2);
-            }
+            /*else if (interval == -2) { //reserved for options that are not time-based
+                entry[@"timeStamp"] = @(-2);
+            }*/
         } else if (interval == 0) {
             remove = entry;
         } else {
             #pragma mark storeSnoozed crash
-            [entry mutableCopy][@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
+            entry[@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
         }
         add = NO;
     }
@@ -552,14 +551,13 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
-    #pragma mark storeSnoozed crash
     storeSnoozed(request, NO);
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
         info = @{@"id": req, @"timeStamp": @([inputDate timeIntervalSince1970])};
-        if (interval == -2)
-        info = @{@"id": req, @"timeStamp": @(-2)};
+        /*else if (interval == -2)
+        info = @{@"id": req, @"timeStamp": @(-2)};*/
     } else if (interval != 0) {
         info = @{@"id": req, @"timeStamp": @([[NSDate date] timeIntervalSince1970] + interval)};
     }
@@ -569,8 +567,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
   }
   [config setValue:entries forKey:@"entries"];
   //[config writeToFile:configPath atomically:YES];
-  [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
-  //[[NSUserDefaults standardUserDefaults] synchronize];
+  [[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -643,12 +640,15 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 // Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
 // [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.]
-/*@interface PCSimpleTimer : NSObject {
+@interface PCSimpleTimer : NSObject {
 	NSRunLoop* _timerRunLoop;
 }
+-(id)userInfo;
+-(void)scheduleInRunLoop:(id)arg1 ;
+-(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
 @end
 
-@interface PCPersistentTimer : NSObject {
+/*@interface PCPersistentTimer : NSObject {
     PCSimpleTimer* _simpleTimer;
 	id _userInfo;
 }
@@ -913,7 +913,7 @@ static void preferencesChanged();
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
@@ -964,7 +964,16 @@ static void preferencesChanged();
             }
             processEntry(request, 900, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -973,21 +982,30 @@ static void preferencesChanged();
                                                              }
                                                              [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
             NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+
+        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(requestToProcess, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 900, nil);
     }
             #pragma mark pill view
@@ -1096,7 +1114,16 @@ static void preferencesChanged();
             }
             processEntry(request, 3600, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
+
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -1105,21 +1132,30 @@ static void preferencesChanged();
                                                              }
                                                              [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
             NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
+
+        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(requestToProcess, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 3600, nil);
     }
             #pragma mark pill view
@@ -1228,7 +1264,16 @@ static void preferencesChanged();
             }
             processEntry(request, 14400, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
+
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -1237,21 +1282,30 @@ static void preferencesChanged();
                                                              }
                                                              [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
             NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
+
+        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(requestToProcess, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 14400, nil);
     }
             #pragma mark pill view
@@ -1360,7 +1414,16 @@ static void preferencesChanged();
             }
             processEntry(request, 28800, nil);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
+
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -1369,21 +1432,30 @@ static void preferencesChanged();
                                                              }
                                                              [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
             NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
             [requestToProcess.content setValue:newTitle forKey:@"_header"];
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
+
+        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(requestToProcess, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 28800, nil);
     }
         #pragma mark pill view
@@ -2093,7 +2165,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
             }
             processEntry(request, -1, senderFix.pickerDate);
         }
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
@@ -2102,7 +2174,14 @@ stackView.alignment = UIStackViewAlignmentCenter;
                                                              }
                                                              [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
@@ -2110,35 +2189,47 @@ stackView.alignment = UIStackViewAlignmentCenter;
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
-        /*PCPersistentTimer *PersistentTimer = [%c(PCPersistentTimer) alloc];
-        PCSimpleTimer *simpleTimer = MSHookIvar<PCSimpleTimer *>(PersistentTimer, "_simpleTimer");
-        NSRunLoop *timerRunLoop = MSHookIvar<NSRunLoop *>(simpleTimer, "_timerRunLoop");
-        NSDictionary* userInfo = @{@"request" : senderFix.request};
-        PCPersistentTimer *timerShow = [[PCPersistentTimer alloc] initWithFireDate:senderFix.pickerDate
-                            serviceIdentifier:nil
+        NSDictionary* userInfo = @{@"request" : senderFix.request, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
+                            serviceIdentifier:@"com.miwix.selenium.service"
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:timerRunLoop];*/
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
         #pragma mark NSTimer
-        NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
+        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
                                                       interval:nil
                                                        repeats:NO
                                                          block:(void (^)(NSTimer *timer))^{
                                                              processEntry(senderFix.request, 0, nil);
                                                              [[AXNManager sharedInstance] showNotificationRequest:senderFix.request];
                                                          }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
 
         [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
         [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-        
     }
+
 }
 
+#pragma mark PCPersistentTimer selector
+%new
+-(void)timerOperations:(id)timer {
+    NSDictionary* userInfo = [(PCSimpleTimer *)timer userInfo];
+    if (userInfo[@"grouped"]) {
+        for (NCNotificationRequest *request in userInfo[@"requests"]) {
+            processEntry(request, 0, nil);
+        }
+        [[AXNManager sharedInstance] showNotificationRequests:userInfo[@"requests"]];
+    } else {
+        NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
+        processEntry(request, 0, nil);
+        [[AXNManager sharedInstance] showNotificationRequest:request];
+    }
+}
 %end
 
 /*@interface DNDState : NSObject
@@ -2163,7 +2254,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -2176,15 +2267,22 @@ stackView.alignment = UIStackViewAlignmentCenter;
             [argFix.content setValue:newTitle forKey:@"_header"];
             %orig(argFix);
             [[AXNManager sharedInstance] hideNotificationRequest:argFix];
-                secondsLeft = [entry[@"timeStamp"] doubleValue] - [[NSDate date] timeIntervalSince1970] + 1;
-            NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
+            secondsLeft = [entry[@"timeStamp"] doubleValue] - [[NSDate date] timeIntervalSince1970] + 1;
+            NSDictionary* userInfo = @{@"request" : argFix};
+            PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
+                                serviceIdentifier:@"com.miwix.selenium.service"
+                                target:self
+                                selector:@selector(timerOperations:)
+                                userInfo:userInfo];
+            [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+            /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
                                                           interval:nil
                                                            repeats:NO
                                                              block:(void (^)(NSTimer *timer))^{
                                                                  processEntry(argFix, 0, nil);
                                                                  [[AXNManager sharedInstance] showNotificationRequest:argFix];
                                                              }];
-            [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];
+            [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
             return;
         }
     }
@@ -2204,6 +2302,15 @@ stackView.alignment = UIStackViewAlignmentCenter;
         }
     }
     %orig;
+}
+
+#pragma mark PCPersistentTimer selector
+%new
+-(void)timerOperations:(id)timer {
+    NSDictionary* userInfo = [(PCSimpleTimer *)timer userInfo];
+    NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
+    processEntry(request, 0, nil);
+    [[AXNManager sharedInstance] showNotificationRequest:request];
 }
 %end
 

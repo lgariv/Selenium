@@ -34,6 +34,7 @@ static NSString *fourHOURS;
 static NSString *eightHOURS;
 static NSString *sTIME;
 static NSString *SNOOZEU;
+static NSString *SNOOZEF;
 static NSString *CANCEL;
 static NSString *TAPCHANGE;
 
@@ -617,13 +618,28 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 -(id)initWithIcon:(id)arg1 title:(id)arg2 subtitle:(id)arg3 sectionSettings:(id)arg4 criticalAlert:(BOOL)arg5 ;
 @end
 
+@interface UIHoursStepper : UIStepper
+@property (nonatomic,retain) UILabel *stepperLabel;
+@property (nonatomic,retain) NCNotificationRequest *request;
+@property (nonatomic,retain) NCNotificationListCell *cell;
+//@property (nonatomic,retain) SBRingerPillView *pillView;
+//@property (nonatomic,retain) UILabel *pillViewUntilLabel;
+@property (nonatomic,retain) UIAlertController *controllerToDismiss;    
+@property (nonatomic,readwrite) BOOL grouped;    
+@end
+
+@implementation UIHoursStepper
+@end
+
 @interface SButton : UIButton
 @property (nonatomic,retain) NCNotificationRequest *request;    
 @property (nonatomic,retain) NCNotificationListCell *cell;    
 @property (nonatomic,retain) SBRingerPillView *pillView;    
 @property (nonatomic,retain) UILabel *pillViewUntilLabel;    
 @property (nonatomic,retain) UIDatePicker *datePicker;
+@property (nonatomic,retain) UIHoursStepper *stepper;
 @property (nonatomic,retain) NSDate *pickerDate;
+@property (nonatomic,retain) NSDate *stepperDate;
 @property (nonatomic,retain) UIAlertController *controllerToDismiss;    
 @property (nonatomic,readwrite) BOOL grouped;    
 @end
@@ -904,28 +920,26 @@ static void preferencesChanged();
 @interface SBRingerPillView : UIView
 @end
 
-@interface UIHoursStepper : SButton
-@end
-
-@implementation UIHoursStepper
-@end
-
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
+    #pragma mark remove already snoozed notifications from entries
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
-        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timeStamp"] doubleValue]) >= 1) {
+        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timestamp"] doubleValue]) >= 1) {
             NCNotificationRequest *expiredReq = entry[@"id"];
             processEntry(expiredReq, 0, nil);
         }
     }
+
+    #pragma mark remove expired notifs from snoozedCache
     NSMutableArray *snoozedCache = [config[@"snoozedCache"] mutableCopy];
     for (NSMutableDictionary *snoozedNotif in snoozedCache) {
+        //NSDate *timestamp = [snoozedNotif objectForKey:@"timeToRemove"];
         if (([[NSDate date] timeIntervalSince1970] - [snoozedNotif[@"timeToRemove"] timeIntervalSince1970]) >= 1) {
             NCNotificationRequest *snoozedNotifReq = snoozedNotif[@"id"];
             storeSnoozed(snoozedNotifReq, YES);
@@ -952,7 +966,7 @@ static void preferencesChanged();
         alert = [UIAlertController alertControllerWithTitle:SNOOZEN message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     }
 
-  [alert addAction:[UIAlertAction actionWithTitle:fMINUTES style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+  /*[alert addAction:[UIAlertAction actionWithTitle:fMINUTES style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if (grouped){
@@ -973,16 +987,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             for (NCNotificationRequest *request in reqsArray) {
-                                                                processEntry(request, 0, nil);
-                                                             }
-                                                             [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
@@ -998,14 +1002,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             processEntry(requestToProcess, 0, nil);
-                                                             [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 900, nil);
     }
             #pragma mark pill view
@@ -1123,16 +1119,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             for (NCNotificationRequest *request in reqsArray) {
-                                                                processEntry(request, 0, nil);
-                                                             }
-                                                             [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
@@ -1148,14 +1134,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             processEntry(requestToProcess, 0, nil);
-                                                             [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 3600, nil);
     }
             #pragma mark pill view
@@ -1273,16 +1251,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             for (NCNotificationRequest *request in reqsArray) {
-                                                                processEntry(request, 0, nil);
-                                                             }
-                                                             [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
@@ -1298,14 +1266,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             processEntry(requestToProcess, 0, nil);
-                                                             [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 14400, nil);
     }
             #pragma mark pill view
@@ -1422,17 +1382,6 @@ static void preferencesChanged();
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             for (NCNotificationRequest *request in reqsArray) {
-                                                                processEntry(request, 0, nil);
-                                                             }
-                                                             [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
         if (![requestToProcess.content.header containsString:SNOOZED]) {
@@ -1448,14 +1397,6 @@ static void preferencesChanged();
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             processEntry(requestToProcess, 0, nil);
-                                                             [[AXNManager sharedInstance] showNotificationRequest:requestToProcess];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         processEntry(requestToProcess, 28800, nil);
     }
         #pragma mark pill view
@@ -1551,7 +1492,7 @@ static void preferencesChanged();
                 repeats:NO
             ];
         }];
-  }]];
+  }]];*/
   /*[alert addAction:[UIAlertAction actionWithTitle:@"Until DND is turned off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     if (grouped){
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
@@ -1578,9 +1519,115 @@ static void preferencesChanged();
     processEntry(requestToProcess, 86400, nil);
   }]];*/
 
+    [alert addAction:[UIAlertAction actionWithTitle:@"STEPPER" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
+        CGFloat margin = 4.0F;
+        
+        [alertController setTitle:SNOOZE];
+        //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        UIDatePicker *picker = [[UIDatePicker alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
+        //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
+        //[picker setMinuteInterval:15];
+        //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
+        //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
+        [alertController.view addSubview:picker];
+
+        SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        [button setBackgroundColor:[UIColor systemBlueColor]];
+        [button setTitle:SNOOZE forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:19];
+        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        button.request = requestToProcess;
+        button.controllerToDismiss = alertController;
+        button.cell = cellToCapture;
+        button.grouped = grouped;
+        [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
+        [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
+        [button addTarget:self action:@selector(stepperButtonUp:) forControlEvents:UIControlEventTouchUpInside];
+        button.layer.cornerRadius = 10.5;
+        [alertController.view addSubview:button];
+
+        UIImageView *myImage = [[UIImageView alloc] init];
+        myImage.image = [self imageWithView:cellToCapture];
+        double widthInPoints = myImage.image.size.width;
+        double heightInPoints = myImage.image.size.height;
+        [myImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+        myImage.contentMode = UIViewContentModeScaleAspectFit;
+        
+        SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
+        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
+
+        if (grouped) {
+            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
+        } else {
+            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
+        }
+
+        [button2 setBackgroundColor:[UIColor systemGrayColor]];
+        [button2 setAlpha:0.1f];
+        button2.layer.cornerRadius = 12.5;
+
+        [alertController.view addSubview:button2];
+        [alertController.view addSubview:myImage];
+        myImage.center = button2.center;
+
+        picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
+
+        #pragma mark stepper "cell"
+        UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
+        [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
+        [stepperFrame setAlpha:0.1];
+        stepperFrame.layer.cornerRadius = 12.5;
+        UIHoursStepper *stepper = [[UIHoursStepper alloc] init];
+        stepper.minimumValue = 1; //15, 30, 45, 1, 2, 3, 4, 6, 8, 12
+        stepper.maximumValue = 10;
+        [stepper addTarget:self action:@selector(valueChanged:) forControlEvents:UIControlEventValueChanged];
+        [alertController.view addSubview:stepperFrame];
+        //[alertController.view addSubview:stepper];
+        CGFloat stepperMargin = CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame);
+UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
+stackView.axis = UILayoutConstraintAxisHorizontal;
+stackView.center = stepperFrame.center;
+stackView.distribution = UIStackViewDistributionEqualSpacing;
+stackView.alignment = UIStackViewAlignmentCenter;
+        CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
+        CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
+        //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
+        CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
+        UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
+        //[alertController.view addSubview:stepperLabel];
+        if ([[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"]) {
+            stepperLabel.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"];
+            stepper.value = [(NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperValue"] doubleValue];
+        } else {
+            stepperLabel.text = @"15 Minutes";
+            stepper.value = 1;
+        }
+        stepper.stepperLabel = stepperLabel;
+        button.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
+        button.stepper = stepper;
+        [stackView addArrangedSubview:stepperLabel];
+        [stackView addArrangedSubview:stepper];
+        [alertController.view addSubview:stackView];
+
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+20) + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
+        popoverController.sourceView = alertController.view;
+        popoverController.sourceRect = [alertController.view bounds];
+
+        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
+
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+            [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+            [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+        }]];
+        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    }]];
+
     [alert addAction:[UIAlertAction actionWithTitle:sTIME style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-        [alertController setTitle:SNOOZEU];
+        [alertController setTitle:SNOOZEF];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         NSLocale *locale = [NSLocale currentLocale];
         UIDatePicker *picker = [[UIDatePicker alloc] init];
@@ -1618,7 +1665,6 @@ static void preferencesChanged();
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
         [button setBackgroundColor:[UIColor systemBlueColor]];
         [button setTitle:SNOOZE forState:UIControlStateNormal];
-        //[button setTitle:@"Snooze" forState:UIControlStateNormal];
         button.titleLabel.font = [UIFont systemFontOfSize:19];
         [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         button.request = requestToProcess;
@@ -1795,102 +1841,6 @@ static void preferencesChanged();
         button.pillView = view;
     }]];
 
-    /*[alert addAction:[UIAlertAction actionWithTitle:@"STEPPER" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-        CGFloat margin = 4.0F;
-        
-        [alertController setTitle:SNOOZEU];
-        //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        UIHoursStepper *picker = [[UIHoursStepper alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
-        //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
-        //[picker setMinuteInterval:15];
-        //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
-        //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
-        [alertController.view addSubview:picker];
-
-        SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
-        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
-        [button setBackgroundColor:[UIColor systemBlueColor]];
-        [button setTitle:SNOOZE forState:UIControlStateNormal];
-        //[button setTitle:@"Snooze" forState:UIControlStateNormal];
-        button.titleLabel.font = [UIFont systemFontOfSize:19];
-        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        button.request = requestToProcess;
-        button.controllerToDismiss = alertController;
-        //button.pickerDate = picker.date;
-        button.cell = cellToCapture;
-        button.grouped = grouped;
-        [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
-        [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
-        [button addTarget:self action:@selector(buttonUp:) forControlEvents:UIControlEventTouchUpInside];
-        button.layer.cornerRadius = 10.5;
-        [alertController.view addSubview:button];
-
-        UIImageView *myImage = [[UIImageView alloc] init];
-        myImage.image = [self imageWithView:cellToCapture];
-        double widthInPoints = myImage.image.size.width;
-        double heightInPoints = myImage.image.size.height;
-        [myImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
-        myImage.contentMode = UIViewContentModeScaleAspectFit;
-        
-        SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
-        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
-
-        if (grouped) {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
-        } else {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
-        }
-
-        [button2 setBackgroundColor:[UIColor systemGrayColor]];
-        [button2 setAlpha:0.1f];
-        button2.layer.cornerRadius = 12.5;
-
-        [alertController.view addSubview:button2];
-        [alertController.view addSubview:myImage];
-        myImage.center = button2.center;
-
-        picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
-
-        #pragma mark stepper "cell"
-        UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
-        [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
-        [stepperFrame setAlpha:0.1];
-        stepperFrame.layer.cornerRadius = 12.5;
-        UIStepper *stepper = [[UIStepper alloc] init];
-        [alertController.view addSubview:stepperFrame];
-        //[alertController.view addSubview:stepper];
-        CGFloat stepperMargin = CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame);
-UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.width)];
-stackView.axis = UILayoutConstraintAxisHorizontal;
-stackView.center = stepperFrame.center;
-stackView.distribution = UIStackViewDistributionEqualSpacing;
-stackView.alignment = UIStackViewAlignmentCenter;
-        CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
-        CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
-        //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
-        CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
-        UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
-        //[alertController.view addSubview:stepperLabel];
-        stepperLabel.text = @"TEST";
-        [stackView addArrangedSubview:stepperLabel];
-        [stackView addArrangedSubview:stepper];
-        [alertController.view addSubview:stackView];
-
-        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+20) + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
-        UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
-        popoverController.sourceView = alertController.view;
-        popoverController.sourceRect = [alertController.view bounds];
-
-        [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
-
-        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-            [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-            [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-        }]];
-        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
-    }]];*/
-
     [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
         [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
         [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
@@ -2022,8 +1972,76 @@ stackView.alignment = UIStackViewAlignmentCenter;
 }
 
 %new
+-(void)valueChanged:(id)sender {
+    UIHoursStepper *stepper = (UIHoursStepper *)sender;
+
+    switch ((int)stepper.value) {
+        case 1:
+            stepper.stepperLabel.text = @"15 Minutes";
+            break;
+        case 2:
+            stepper.stepperLabel.text = @"30 Minutes";
+            break;
+        case 3:
+            stepper.stepperLabel.text = @"45 Minutes";
+            break;
+        case 4:
+            stepper.stepperLabel.text = @"1 Hour";
+            break;
+        case 5:
+            stepper.stepperLabel.text = @"2 Hours";
+            break;
+        case 6:
+            stepper.stepperLabel.text = @"3 Hours";
+            break;
+        case 7:
+            stepper.stepperLabel.text = @"4 Hours";
+            break;
+        case 8:
+            stepper.stepperLabel.text = @"6 Hours";
+            break;
+        case 9:
+            stepper.stepperLabel.text = @"8 Hours";
+            break;
+        case 10:
+            stepper.stepperLabel.text = @"12 Hours";
+            break;
+    }
+    [[NSUserDefaults standardUserDefaults] setValue:[NSNumber numberWithFloat:stepper.value] forKey:@"lastStepperValue"];
+    [[NSUserDefaults standardUserDefaults] setObject:stepper.stepperLabel.text forKey:@"lastStepperLabelText"];
+}
+
+%new
 -(NSDate *)getDatePickerValue:(UIDatePicker *)sender {
     return [sender date];
+}
+
+%new
+-(NSDate *)getStepperValue:(NSNumber *)number {
+    int doubleNumber = [number intValue];
+
+    switch (doubleNumber) {
+        case 1:
+            return [NSDate dateWithTimeIntervalSinceNow:900];
+        case 2:
+            return [NSDate dateWithTimeIntervalSinceNow:1800];
+        case 3:
+            return [NSDate dateWithTimeIntervalSinceNow:2700];
+        case 4:
+            return [NSDate dateWithTimeIntervalSinceNow:3600];
+        case 5:
+            return [NSDate dateWithTimeIntervalSinceNow:7200];
+        case 6:
+            return [NSDate dateWithTimeIntervalSinceNow:10800];
+        case 7:
+            return [NSDate dateWithTimeIntervalSinceNow:14400];
+        case 8:
+            return [NSDate dateWithTimeIntervalSinceNow:21600];
+        case 9:
+            return [NSDate dateWithTimeIntervalSinceNow:28800];
+        case 10:
+            return [NSDate dateWithTimeIntervalSinceNow:43200];
+    }
 }
 
 %new
@@ -2043,6 +2061,150 @@ stackView.alignment = UIStackViewAlignmentCenter;
     [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
         sender.alpha = 1.0f;
     } completion:nil];
+}
+
+%new
+-(void)stepperButtonUp:(id)sender {
+    SButton *senderFix = sender;
+    NSDate *value = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:senderFix.stepper.value]];
+
+        #pragma mark pill view
+        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+        view.frame = CGRectMake(0,-56,196,50);
+        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
+
+        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedLabel = @{
+                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+        pillSnoozedLabel.attributedText = attributedText;
+        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+        
+        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableArray *parts = [SNOOZEF componentsSeparatedByString:@" "];
+        [parts removeObject:parts[0]];
+        NSString *UNTIL = [parts componentsJoinedByString:@" "];
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,senderFix.stepper.stepperLabel.text] attributes:attribsSnoozedLabel];
+        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,senderFix.stepper.stepperLabel.text] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+
+        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+        NSDictionary *attribsTapToChangeLabel = @{
+                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                          NSFontAttributeName:boldFont
+                          };
+        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+        [view addSubview:pillSnoozedLabel];
+        [view addSubview:pillSnoozedForUntilLabel];
+        [view addSubview:pillTapToChangeLabel];
+        [view addSubview:pillViewButton];
+        CGFloat combinedSize;
+        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        } else {
+            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+        }
+        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        UIWindow *window;
+        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
+            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
+                window = [UIApplication sharedApplication].windows[i];
+                break;
+            }
+        }
+        [window addSubview:view];
+        [UIView animateWithDuration:0.33f animations:^{
+            view.frame = CGRectMake(0,44,196,50);
+            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+        } completion:^(BOOL finished) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0f
+                target:[NSBlockOperation blockOperationWithBlock:^{
+                    [UIView animateWithDuration:0.33f animations:^{
+                        view.frame = CGRectMake(0,-56,196,50);
+                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+                    } completion:^(BOOL finished) {
+                        [view removeFromSuperview];
+                    }];
+                }]
+                selector:@selector(main)
+                userInfo:nil
+                repeats:NO
+            ];
+        }];
+
+    [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
+        senderFix.alpha = 1.0f;
+    } completion:nil];
+    [senderFix.controllerToDismiss dismissViewControllerAnimated:YES completion:nil];
+
+    NCNotificationListView *cellListView = (NCNotificationListView *)senderFix.cell.superview;
+    NCNotificationGroupList *groupList = cellListView.dataSource;
+    NSMutableArray *reqsArray = [groupList.orderedRequests copy];
+
+    if(senderFix.grouped) {
+        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
+        for (NCNotificationRequest *request in reqsArray) {
+            if (![request.content.header containsString:SNOOZED]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
+                [request.content setValue:newTitle forKey:@"_header"];
+            }
+            processEntry(request, -1, value);
+        }
+        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:value
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+    } else {
+        [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
+        if (![senderFix.request.content.header containsString:SNOOZED]) {
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
+            [senderFix.request.content setValue:newTitle forKey:@"_header"];
+        }
+        #pragma mark PCPersistentTimer setup
+        NSDictionary* userInfo = @{@"request" : senderFix.request, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
+        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:value
+                            serviceIdentifier:@"com.miwix.selenium.service"
+                            target:self
+                            selector:@selector(timerOperations:)
+                            userInfo:userInfo];
+        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+
+        processEntry(senderFix.request, -1, value);
+
+        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
+        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+    }
+
 }
 
 %new
@@ -2165,16 +2327,6 @@ stackView.alignment = UIStackViewAlignmentCenter;
             }
             processEntry(request, -1, senderFix.pickerDate);
         }
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             for (NCNotificationRequest *request in reqsArray) {
-                                                                processEntry(request, 0, nil);
-                                                             }
-                                                             [[AXNManager sharedInstance] showNotificationRequests:reqsArray];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
         NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
         PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
                             serviceIdentifier:@"com.miwix.selenium.service"
@@ -2196,16 +2348,6 @@ stackView.alignment = UIStackViewAlignmentCenter;
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        #pragma mark NSTimer
-        /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:senderFix.pickerDate
-                                                      interval:nil
-                                                       repeats:NO
-                                                         block:(void (^)(NSTimer *timer))^{
-                                                             processEntry(senderFix.request, 0, nil);
-                                                             [[AXNManager sharedInstance] showNotificationRequest:senderFix.request];
-                                                         }];
-        [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
 
@@ -2527,19 +2669,14 @@ static void preferencesChanged()
     eightHOURS = [tweakBundle localizedStringForKey:@"eightHOURS" value:@"" table:nil];
     sTIME = [tweakBundle localizedStringForKey:@"sTIME" value:@"" table:nil];
     SNOOZEU = [tweakBundle localizedStringForKey:@"SNOOZEU" value:@"" table:nil];
+    SNOOZEF = [tweakBundle localizedStringForKey:@"SNOOZEF" value:@"" table:nil];
     CANCEL = [tweakBundle localizedStringForKey:@"CANCEL" value:@"" table:nil];
     TAPCHANGE = [tweakBundle localizedStringForKey:@"TAPCHANGE" value:@"" table:nil];
 
     #pragma mark my addition
     if (![[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] isKindOfClass:[%c(NSDictionary) class]]) {
-        //[manager createFileAtPath:configPath contents:nil attributes:attributes];
         NSMutableDictionary *configInitial = [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} mutableCopy];
         [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:configInitial] forKey:@"dictionaryKey"];
-        NSLog(@"[Selenium] IF");
-        NSLog(@"[Selenium] configInitial:%@",[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]);
-    } else {
-        NSLog(@"[Selenium] ELSE");
-        NSLog(@"[Selenium] config:%@",[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]);
     }
 
     CFNotificationCenterAddObserver(

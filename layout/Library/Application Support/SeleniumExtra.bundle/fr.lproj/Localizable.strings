@@ -17,6 +17,8 @@
 	<string>Pendant 8 heures</string>
 	<key>sTIME</key>
 	<string>Durée personnalisée</string>
+	<key>SNOOZEF</key>
+	<string>Snooze Pendant </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
 	<key>SNOOZEU</key>
 	<string>Snooze jusqu'à </string>
 	<key>CANCEL</key>

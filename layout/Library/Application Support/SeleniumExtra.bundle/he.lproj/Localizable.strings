@@ -17,6 +17,8 @@
 	<string>ל8 שעות</string>
 	<key>sTIME</key>
 	<string>זמן ספציפי</string>
+	<key>SNOOZEF</key>
+	<string>דחה ל</string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
 	<key>SNOOZEU</key>
 	<string>דחה עד ל</string>
 	<key>CANCEL</key>

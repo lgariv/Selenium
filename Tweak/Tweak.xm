@@ -975,7 +975,7 @@ UIBackgroundTaskIdentifier bgTask;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         if (![[NSUserDefaults standardUserDefaults] objectForKey:@"firstTime"]) {
-            //[[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithBool:YES] forKey:@"firstTime"];
+            [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithBool:YES] forKey:@"firstTime"];
             //CustomPresentationController *tD = [[CustomPresentationController alloc] init];
             UIViewController *donateController = [[UIViewController alloc] init];
             [[donateController view] setBackgroundColor:[UIColor systemBackgroundColor]];
@@ -1043,7 +1043,7 @@ UIBackgroundTaskIdentifier bgTask;
             [closeButton.trailingAnchor constraintEqualToAnchor:[donateController view].trailingAnchor constant:-10.0f].active = YES;
 
             [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:donateController animated:YES completion:nil];
-            //donateController.modalInPopover = YES;
+            donateController.modalInPopover = YES;
         } else {
             //[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"firstTime"];
         }

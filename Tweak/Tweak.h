@@ -52,3 +52,7 @@
 @property (nonatomic, retain) AXNView *axnView;
 
 @end
+
+@interface SBNCScreenController : NSObject
+-(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 ;
+@end

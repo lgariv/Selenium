@@ -9,12 +9,24 @@
 	<string>Snoozed</string>
 	<key>fMINUTES</key>
 	<string>Pendant 15 minutes</string>
+	<key>tMINUTES</key>
+	<string>Pendant 30 minutes</string>
+	<key>ffMINUTES</key>
+	<string>Pendant 45 minutes</string>
 	<key>oneHOUR</key>
 	<string>Pendant 1 heure</string>
+	<key>twoHOUR</key>
+	<string>Pendant 2 heures</string>
+	<key>threeHOURS</key>
+	<string>Pendant 3 heures</string>
 	<key>fourHOURS</key>
 	<string>Pendant 4 heures</string>
+	<key>sixHOURS</key>
+	<string>Pendant 6 heures</string>
 	<key>eightHOURS</key>
 	<string>Pendant 8 heures</string>
+	<key>eightHOURS</key>
+	<string>Pendant 12 heures</string>
 	<key>sTIME</key>
 	<string>Durée personnalisée</string>
 	<key>SNOOZEF</key>

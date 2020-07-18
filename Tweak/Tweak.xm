@@ -29,6 +29,8 @@ static NSString *SNOOZENS;
 static NSString *SNOOZE;
 static NSString *SNOOZED;
 static NSString *fMINUTES;
+static NSString *tMINUTES;
+static NSString *ffMINUTES;
 static NSString *oneHOUR;
 static NSString *fourHOURS;
 static NSString *eightHOURS;
@@ -53,7 +55,7 @@ void updateViewConfiguration() {
     }
 }
 
-%group Axon
+%group Selenium
 
 #pragma mark Legibility color
 
@@ -239,18 +241,18 @@ void updateViewConfiguration() {
 %end
 
 // iOS13 Support
-@interface NCNotificationMasterList
-@property(retain, nonatomic) NSMutableArray *notificationSections;
-@end
+/*@interface NCNotificationMasterList <clvc>
+@end*/
 @interface NCNotificationStructuredSectionList
 @property (nonatomic,readonly) NSArray * allNotificationRequests;
 @end
-@interface NCNotificationStructuredListViewController <clvc>
+@interface NCNotificationMasterList <clvc>
+@property(retain, nonatomic) NSMutableArray *notificationSections;
 @property (nonatomic,assign) BOOL axnAllowChanges;
 @property (nonatomic,retain) NCNotificationMasterList * masterList;
 -(void)revealNotificationHistory:(BOOL)arg1 animated:(BOOL)arg2 ;
 @end
-%hook NCNotificationStructuredListViewController
+%hook NCNotificationMasterList
 %property (nonatomic,assign) BOOL axnAllowChanges;
 -(id)init {
     %orig;
@@ -474,25 +476,25 @@ static NSDictionary *info;
 - (void)swipedUp:(id)arg1 {
     info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
 }
 %end
 
 //static double minutesLeft;
 static double secondsLeft;
 
-//static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
+static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
 //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+//static NSString *configPath = @"/Library/Application Support/Selenium/config.plist";
+static NSMutableDictionary *config;
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
-  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+  //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  for (NSMutableDictionary __strong *entry in entries) {
-    entry = [entry mutableCopy];
+  for (NSMutableDictionary /*__strong*/ *entry in entries) {
+    //entry = [entry mutableCopy];
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
@@ -515,19 +517,19 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
     [entries addObject:info];
   }
   [config setValue:entries forKey:@"snoozedCache"];
-  //[config writeToFile:configPath atomically:YES];
-  [[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
+  [config writeToFile:configPath atomically:YES];
+  //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
-  NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+  //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  for (NSMutableDictionary __strong *entry in entries) {
+  for (NSMutableDictionary /*__strong*/ *entry in entries) {
   //for (NSDictionary __strong *entry in entries) {
-    entry = [entry mutableCopy];
+    //entry = [entry mutableCopy];
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
@@ -567,8 +569,8 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     }
   }
   [config setValue:entries forKey:@"entries"];
-  //[config writeToFile:configPath atomically:YES];
-  [[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
+  [config writeToFile:configPath atomically:YES];
+  //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -619,12 +621,12 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @end
 
 @interface UIHoursStepper : UIStepper
-@property (nonatomic,retain) UILabel *stepperLabel;
+@property (nonatomic,retain) UIStackView *stepperLabel;
 @property (nonatomic,retain) NCNotificationRequest *request;
 @property (nonatomic,retain) NCNotificationListCell *cell;
 //@property (nonatomic,retain) SBRingerPillView *pillView;
 //@property (nonatomic,retain) UILabel *pillViewUntilLabel;
-@property (nonatomic,retain) UIAlertController *controllerToDismiss;    
+@property (nonatomic,retain) UIViewController *controllerToDismiss;    
 @property (nonatomic,readwrite) BOOL grouped;    
 @end
 
@@ -640,7 +642,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @property (nonatomic,retain) UIHoursStepper *stepper;
 @property (nonatomic,retain) NSDate *pickerDate;
 @property (nonatomic,retain) NSDate *stepperDate;
-@property (nonatomic,retain) UIAlertController *controllerToDismiss;    
+@property (nonatomic,retain) UIViewController *controllerToDismiss;    
 @property (nonatomic,readwrite) BOOL grouped;    
 @end
 
@@ -652,6 +654,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 @interface SpringBoard ()
 - (UIImage *) imageWithView:(UIView *)view;
+-(NSDate *)getStepperValue:(NSNumber *)number;
 @end
 
 // Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
@@ -920,17 +923,37 @@ static void preferencesChanged();
 @interface SBRingerPillView : UIView
 @end
 
+@interface SBUIChevronView : UIView
+-(void)setColor:(UIColor *)arg1 ;
+-(void)setState:(long long)arg1 animated:(BOOL)arg2;
+-(void)setAnimationDuration:(double)arg1 ;
+@end
+
+UIApplication  *springBoardApp;
+UIBackgroundTaskIdentifier bgTask;
+
+%hook CSCoverSheetViewController
+-(void)viewDidDisappear:(BOOL)arg1 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.donate" object:nil userInfo:nil];
+    %orig;
+}
+%end
+
+#import "cpc.h"
+
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
-    //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showDonateController:) name:@"com.miwix.selenium.donate" object:nil];
+
+    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
     #pragma mark remove already snoozed notifications from entries
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
-        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timestamp"] doubleValue]) >= 1) {
+        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timeStamp"] doubleValue]) >= 1) {
             NCNotificationRequest *expiredReq = entry[@"id"];
             processEntry(expiredReq, 0, nil);
         }
@@ -948,12 +971,119 @@ static void preferencesChanged();
 }
 
 %new
+- (void)showDonateController:(NSNotification *)notification {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (![[NSUserDefaults standardUserDefaults] objectForKey:@"firstTime"]) {
+            //[[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithBool:YES] forKey:@"firstTime"];
+            //CustomPresentationController *tD = [[CustomPresentationController alloc] init];
+            UIViewController *donateController = [[UIViewController alloc] init];
+            [[donateController view] setBackgroundColor:[UIColor systemBackgroundColor]];
+            //[donateController setModalPresentationStyle:UIModalPresentationPopover];
+            //donateController.transitioningDelegate = tD;
+
+            UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, [donateController view].frame.size.width, [donateController view].frame.size.width)];
+            stackView.axis = UILayoutConstraintAxisVertical;
+            stackView.alignment = UIStackViewAlignmentCenter;
+            stackView.distribution = UIStackViewDistributionEqualSpacing;
+            stackView.layoutMarginsRelativeArrangement = YES;
+            stackView.spacing = 10;
+
+            UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"];
+            UIImageView *iconImageView = [[UIImageView alloc] initWithImage:iconImage];
+            [iconImageView setFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
+            [iconImageView setTranslatesAutoresizingMaskIntoConstraints:YES];
+            [iconImageView.widthAnchor constraintEqualToAnchor:nil constant:100.0f].active = YES;
+            [iconImageView.heightAnchor constraintEqualToAnchor:nil constant:100.0f].active = YES;
+
+            UILabel *textLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
+            NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:@"Thank you for installing Selenium!\n I hope you'll enjoy it😁\n\n Selenium has been in the works for over 5 months, and is based on code from several open-source tweaks. Therefore, it is delivered to you completely free of charge🤑\n\n If you appreciate my work, please consider making a small donation."];
+            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f weight:UIFontWeightBlack] range:NSMakeRange(0,35)];
+            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f] range:NSMakeRange(36,133)];
+            textLabel.attributedText = attributedText;
+            textLabel.textColor = [UIColor labelColor];
+            textLabel.textAlignment = NSTextAlignmentCenter;
+            textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+            textLabel.numberOfLines = 0;
+            
+            SButton *donateButton = [SButton buttonWithType:UIButtonTypeSystem];
+            [donateButton setFrame:CGRectMake(0, 0, 250.0f, 50.0f)]; // Notch Series
+            [donateButton setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [donateButton.widthAnchor constraintEqualToAnchor:nil constant:250.0f].active = YES;
+            [donateButton.heightAnchor constraintEqualToAnchor:nil constant:50.0f].active = YES;
+            [donateButton setTitle:@"Donate" forState:UIControlStateNormal];
+            [donateButton setBackgroundColor:[UIColor colorWithRed:174.0f/255.0f green:130.0f/255.0f blue:155.0f/255.0f alpha:1.0f]];
+            [[donateButton titleLabel] setFont:[UIFont systemFontOfSize:19]];
+            [[donateButton layer] setCornerRadius:10.5];
+            [donateButton setTintColor:[UIColor whiteColor]];
+            [donateButton addTarget:self action:@selector(buttonDonate:) forControlEvents:UIControlEventTouchUpInside];
+            donateButton.controllerToDismiss = donateController;
+
+            SButton *closeButton = [SButton buttonWithType:UIButtonTypeClose];
+            [closeButton setFrame:CGRectMake(0, 0, 30.0f, 30.0f)];
+            [closeButton addTarget:self action:@selector(buttonDismiss:) forControlEvents:UIControlEventTouchUpInside];
+            closeButton.controllerToDismiss = donateController;
+
+            [stackView addArrangedSubview:iconImageView];
+            [stackView addArrangedSubview:textLabel];
+            [stackView addArrangedSubview:donateButton];
+            [[donateController view] addSubview:stackView];
+            [[donateController view] addSubview:closeButton];
+
+            // Constraints
+            [stackView setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [stackView.centerXAnchor constraintEqualToAnchor:[donateController view].centerXAnchor constant:0].active = YES;
+            [stackView.centerYAnchor constraintEqualToAnchor:[donateController view].centerYAnchor constant:-10.0f].active = YES;
+            [stackView.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:-50.0f].active = YES;
+            [stackView.heightAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:50.0f].active = YES;
+            [textLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [textLabel.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:-100.0f].active = YES;
+            [closeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [closeButton.topAnchor constraintEqualToAnchor:[donateController view].topAnchor constant:10.0f].active = YES;
+            [closeButton.trailingAnchor constraintEqualToAnchor:[donateController view].trailingAnchor constant:-10.0f].active = YES;
+
+            [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:donateController animated:YES completion:nil];
+            //donateController.modalInPopover = YES;
+        } else {
+            //[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"firstTime"];
+        }
+    });
+}
+
+%new
+- (void)animateTransition:(id)transitionContext {
+    UIViewController* firstVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
+    UIViewController* secondVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
+    UIView* containerView = [transitionContext containerView];
+    UIView* firstView = firstVC.view;
+    UIView* secondView = secondVC.view;
+        [containerView addSubview:secondView];
+        secondView.frame = (CGRect){
+            containerView.frame.origin.x,
+            containerView.frame.origin.y + containerView.frame.size.height,
+            containerView.frame.size
+        };
+        firstView.tintAdjustmentMode = UIViewTintAdjustmentModeDimmed;
+        [UIView animateWithDuration:1.0 animations:^{
+            secondView.frame = containerView.frame;
+        } completion:^(BOOL finished) {
+            [transitionContext completeTransition:YES];
+        }];
+}
+
+%new
 - (void)showMuteMenu:(NSNotification *)notification {
     NCNotificationRequest *requestToProcess = notification.userInfo[@"id"];
     NCNotificationListCell *cellToCapture = notification.userInfo[@"cell"];
     NCNotificationListView *cellListView = (NCNotificationListView *)cellToCapture.superview;
     NCNotificationGroupList *groupList = cellListView.dataSource;
     NSMutableArray *reqsArray = [groupList.orderedRequests copy];
+
+    springBoardApp = [UIApplication sharedApplication];
+    bgTask = [springBoardApp beginBackgroundTaskWithExpirationHandler:^{
+        //[app endBackgroundTask:bgTask];
+        //bgTask = UIBackgroundTaskInvalid;
+    }];
 
     UIAlertController *alert;
 
@@ -1523,13 +1653,14 @@ static void preferencesChanged();
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
         CGFloat margin = 4.0F;
         
-        [alertController setTitle:SNOOZE];
+        [alertController setTitle:SNOOZEF];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         UIDatePicker *picker = [[UIDatePicker alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
         //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
         //[picker setMinuteInterval:15];
         //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
         //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
+        picker.hidden = YES;
         [alertController.view addSubview:picker];
 
         SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
@@ -1596,6 +1727,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
         //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
         CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
         UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
+        UILabel *stepperUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperLabel.frame.origin.x+stepperLabel.frame.size.height, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
         //[alertController.view addSubview:stepperLabel];
         if ([[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"]) {
             stepperLabel.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"];
@@ -1604,10 +1736,36 @@ stackView.alignment = UIStackViewAlignmentCenter;
             stepperLabel.text = @"15 Minutes";
             stepper.value = 1;
         }
-        stepper.stepperLabel = stepperLabel;
+        //[stepperLabel setFont:[UIFont boldSystemFontOfSize:17.0f]];
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+        formatter.dateStyle = NSDateFormatterShortStyle;
+        formatter.timeStyle = NSDateFormatterShortStyle;
+        [formatter setDateFormat:@"HH:mm"];
+        NSString *result = [formatter stringForObjectValue:[self getStepperValue:[NSNumber numberWithFloat:stepper.value]]];
+        NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+        [parts removeObject:parts[0]];
+        NSString *UNTIL = [parts componentsJoinedByString:@" "];
+        UIFont *systemFont = [UIFont systemFontOfSize:13.0f];
+        NSDictionary *attribsSnoozedForUntilLabel = @{
+                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                          NSFontAttributeName:systemFont
+                          };
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedForUntilLabel];
+        stepperUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+
         button.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
         button.stepper = stepper;
-        [stackView addArrangedSubview:stepperLabel];
+UIStackView *labelStackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
+labelStackView.axis = UILayoutConstraintAxisVertical;
+labelStackView.center = stepperFrame.center;
+labelStackView.distribution = UIStackViewDistributionEqualSpacing;
+labelStackView.alignment = UIStackViewAlignmentLeading;
+        [labelStackView addArrangedSubview:stepperLabel];
+        [labelStackView addArrangedSubview:stepperUntilLabel];
+        stepper.stepperLabel = labelStackView;
+
+        [stackView addArrangedSubview:labelStackView];
         [stackView addArrangedSubview:stepper];
         [alertController.view addSubview:stackView];
 
@@ -1619,8 +1777,8 @@ stackView.alignment = UIStackViewAlignmentCenter;
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
         [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-            [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-            [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
+            [springBoardApp endBackgroundTask:bgTask];
+            bgTask = UIBackgroundTaskInvalid;
         }]];
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
     }]];
@@ -1706,6 +1864,10 @@ stackView.alignment = UIStackViewAlignmentCenter;
         picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+30) + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
 
+        UIViewController *test = [[UIViewController alloc] init];
+        [[test view] setBackgroundColor:[UIColor whiteColor]];
+        [test setModalPresentationStyle:UIModalPresentationPopover];
+
         UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
         popoverController.sourceView = alertController.view;
         popoverController.sourceRect = [alertController.view bounds];
@@ -1713,7 +1875,10 @@ stackView.alignment = UIStackViewAlignmentCenter;
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
         // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
-        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+            [springBoardApp endBackgroundTask:bgTask];
+            bgTask = UIBackgroundTaskInvalid;
+        }]];
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 
         // That's how you should do it in iOS 13.
@@ -1796,147 +1961,12 @@ stackView.alignment = UIStackViewAlignmentCenter;
         }
         pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
 
-        /*UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];*/
         button.pillView = view;
     }]];
 
     [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-        #pragma mark pill view
-        /*UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
-        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
-        view.frame = CGRectMake(0,-56,196,50);
-        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
-        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
-
-        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedLabel = @{
-                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
-        pillSnoozedLabel.attributedText = attributedText;
-        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
-        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
-        
-        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedForUntilLabel = @{
-                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fMINUTES attributes:attribsSnoozedLabel];
-        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
-        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [fMINUTES sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
-""
-        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
-        NSDictionary *attribsTapToChangeLabel = @{
-                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
-        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
-        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
-        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
-        UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        [view addSubview:pillSnoozedLabel];
-        [view addSubview:pillSnoozedForUntilLabel];
-        [view addSubview:pillTapToChangeLabel];
-        [view addSubview:pillViewButton];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];*/
+        [springBoardApp endBackgroundTask:bgTask];
+        bgTask = UIBackgroundTaskInvalid;
     }]];
     [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
 
@@ -1962,13 +1992,41 @@ stackView.alignment = UIStackViewAlignmentCenter;
     }
 
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:view.bounds.size];
-	
-	UIImage *imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+	static UIImage *imageRender;/* = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
         [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
-	}];
+    }];*/
+
+    if (view.alpha == 0) {
+	    renderer = nil;
+        return imageRender;
+    } else {
+        imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+            [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
+        }];
+	    renderer = nil;
+        return imageRender;
+    }
 
 	renderer = nil;
+    /*if (view.alpha != 1.0f) {
+        NSCoder *imageBoundsData = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageBounds"];
+        CGRect imageBounds = [imageBoundsData decodeCGRectForKey:@"cellRect"];
+        static UIImage *imageFromDefaults = [UIImage imageWithData:[[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageData"]];
+        imageRender = [UIImage imageWithCGImage:CGImageCreateWithImageInRect([UIImage imageWithData:imageFromDefaults.CGImage, imageBounds) scale:imageFromDefaults.CGImage.scale orientation:imageFromDefaults.CGImage.imageOrientation];
+        //imageRender = [UIImage imageWithData:[[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageData"]];
+    } else {
+        NSData *imageData = UIImagePNGRepresentation(imageRender);
+        [[NSUserDefaults standardUserDefaults] setObject:imageData forKey:@"lastCellImageData"];
+        NSCoder *imageBoundsData;
+        [imageBoundsData encodeCGRect:view.bounds forKey:@"cellRect"];
+        [[NSUserDefaults standardUserDefaults] setObject:imageBoundsData forKey:@"lastCellImageBounds"];
+    }*/
     return imageRender;
+}
+
+%new
+-(NSDate *)getDatePickerValue:(UIDatePicker *)sender {
+    return [sender date];
 }
 
 %new
@@ -1977,43 +2035,49 @@ stackView.alignment = UIStackViewAlignmentCenter;
 
     switch ((int)stepper.value) {
         case 1:
-            stepper.stepperLabel.text = @"15 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"15 Minutes";
             break;
         case 2:
-            stepper.stepperLabel.text = @"30 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"30 Minutes";
             break;
         case 3:
-            stepper.stepperLabel.text = @"45 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"45 Minutes";
             break;
         case 4:
-            stepper.stepperLabel.text = @"1 Hour";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"1 Hour";
             break;
         case 5:
-            stepper.stepperLabel.text = @"2 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"2 Hours";
             break;
         case 6:
-            stepper.stepperLabel.text = @"3 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"3 Hours";
             break;
         case 7:
-            stepper.stepperLabel.text = @"4 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"4 Hours";
             break;
         case 8:
-            stepper.stepperLabel.text = @"6 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"6 Hours";
             break;
         case 9:
-            stepper.stepperLabel.text = @"8 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"8 Hours";
             break;
         case 10:
-            stepper.stepperLabel.text = @"12 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"12 Hours";
             break;
     }
     [[NSUserDefaults standardUserDefaults] setValue:[NSNumber numberWithFloat:stepper.value] forKey:@"lastStepperValue"];
-    [[NSUserDefaults standardUserDefaults] setObject:stepper.stepperLabel.text forKey:@"lastStepperLabelText"];
-}
+    [[NSUserDefaults standardUserDefaults] setObject:[(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text forKey:@"lastStepperLabelText"];
 
-%new
--(NSDate *)getDatePickerValue:(UIDatePicker *)sender {
-    return [sender date];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+    formatter.dateStyle = NSDateFormatterShortStyle;
+    formatter.timeStyle = NSDateFormatterShortStyle;
+    [formatter setDateFormat:@"HH:mm"];
+    NSString *result = [formatter stringForObjectValue:[self getStepperValue:[NSNumber numberWithFloat:stepper.value]]];
+    NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+    [parts removeObject:parts[0]];
+    NSString *UNTIL = [parts componentsJoinedByString:@" "];
+    [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews lastObject].text = [NSString stringWithFormat:@"%@%@",UNTIL,result];
 }
 
 %new
@@ -2050,6 +2114,21 @@ stackView.alignment = UIStackViewAlignmentCenter;
 }
 
 %new
+-(void)buttonDonate:(UIButton *)sender {
+    SButton *senderFix = sender;
+    [senderFix.controllerToDismiss dismissViewControllerAnimated:YES completion:nil];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=DSAQ8SXMGFUNU&source=url"]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.resume.home" object:nil userInfo:nil];
+}
+
+%new
+-(void)buttonDismiss:(UIButton *)sender {
+    SButton *senderFix = sender;
+    [senderFix.controllerToDismiss dismissViewControllerAnimated:YES completion:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.resume.home" object:nil userInfo:nil];
+}
+
+%new
 -(void)buttonDown:(UIButton *)sender {
     [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
         sender.alpha = 0.5f;
@@ -2065,6 +2144,9 @@ stackView.alignment = UIStackViewAlignmentCenter;
 
 %new
 -(void)stepperButtonUp:(id)sender {
+    [springBoardApp endBackgroundTask:bgTask];
+    bgTask = UIBackgroundTaskInvalid;
+
     SButton *senderFix = sender;
     NSDate *value = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:senderFix.stepper.value]];
 
@@ -2096,11 +2178,11 @@ stackView.alignment = UIStackViewAlignmentCenter;
         NSMutableArray *parts = [SNOOZEF componentsSeparatedByString:@" "];
         [parts removeObject:parts[0]];
         NSString *UNTIL = [parts componentsJoinedByString:@" "];
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,senderFix.stepper.stepperLabel.text] attributes:attribsSnoozedLabel];
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] attributes:attribsSnoozedLabel];
         pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
         pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
         pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,senderFix.stepper.stepperLabel.text] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
         pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
 
         UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
@@ -2200,15 +2282,14 @@ stackView.alignment = UIStackViewAlignmentCenter;
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
         processEntry(senderFix.request, -1, value);
-
-        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     }
-
 }
 
 %new
 -(void)buttonUp:(id)sender {
+    [springBoardApp endBackgroundTask:bgTask];
+    bgTask = UIBackgroundTaskInvalid;
+
     SButton *senderFix = sender;
     senderFix.pickerDate = [self performSelector:@selector(getDatePickerValue:) withObject:senderFix.datePicker];
 
@@ -2350,11 +2431,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
         [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
-
-        [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-        [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     }
-
 }
 
 #pragma mark PCPersistentTimer selector
@@ -2396,7 +2473,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -2456,9 +2533,9 @@ stackView.alignment = UIStackViewAlignmentCenter;
 }
 %end
 
-%hook SBNCScreenController
+/*%hook SBNCScreenController
 -(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -2482,7 +2559,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
 
 %hook SBNCSoundController
 -(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -2505,8 +2582,8 @@ stackView.alignment = UIStackViewAlignmentCenter;
 %end
 
 %hook SBNotificationBannerDestination
--(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(/*^block*/id)arg3 {
-    NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+-(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(id)arg3 {
+    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -2526,7 +2603,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
     }
     %orig;
 }
-%end
+%end*/
 %end
 
 @interface NCNotificationContentView : NSObject
@@ -2558,7 +2635,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
 %end
 
 // iOS 13 Support
-%hook NCNotificationStructuredListViewController
+%hook NCNotificationMasterList
 %property (nonatomic,assign) BOOL axnAllowChanges;
 -(UIEdgeInsets)insetMargins {
     if (verticalPosition == 0) return UIEdgeInsetsMake(0, -96, 0, 0);
@@ -2576,12 +2653,12 @@ stackView.alignment = UIStackViewAlignmentCenter;
 %end
 
 // iOS 13 Support
-%hook CSCombinedListViewController
+/*%hook CSCombinedListViewController
 -(void)viewDidLoad{
     %orig;
     [AXNManager sharedInstance].sbclvc = self;
 }
-%end
+%end*/
 %end
 
 /* Hide all notifications on open. */
@@ -2664,6 +2741,8 @@ static void preferencesChanged()
     SNOOZE = [tweakBundle localizedStringForKey:@"SNOOZE" value:@"" table:nil];
     SNOOZED = [tweakBundle localizedStringForKey:@"SNOOZED" value:@"" table:nil];
     fMINUTES = [tweakBundle localizedStringForKey:@"fMINUTES" value:@"" table:nil];
+    tMINUTES = [tweakBundle localizedStringForKey:@"tMINUTES" value:@"" table:nil];
+    ffMINUTES = [tweakBundle localizedStringForKey:@"ffMINUTES" value:@"" table:nil];
     oneHOUR = [tweakBundle localizedStringForKey:@"oneHOUR" value:@"" table:nil];
     fourHOURS = [tweakBundle localizedStringForKey:@"fourHOURS" value:@"" table:nil];
     eightHOURS = [tweakBundle localizedStringForKey:@"eightHOURS" value:@"" table:nil];
@@ -2674,9 +2753,25 @@ static void preferencesChanged()
     TAPCHANGE = [tweakBundle localizedStringForKey:@"TAPCHANGE" value:@"" table:nil];
 
     #pragma mark my addition
-    if (![[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] isKindOfClass:[%c(NSDictionary) class]]) {
+    /*if (![[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]) {
         NSMutableDictionary *configInitial = [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} mutableCopy];
         [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:configInitial] forKey:@"dictionaryKey"];
+    }*/
+
+    static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
+
+    NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
+    [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileOwnerAccountID];
+    [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileGroupOwnerAccountID];
+
+    NSFileManager *manager = [NSFileManager defaultManager];
+
+    if (![manager fileExistsAtPath:configPath]) {
+        if(![manager fileExistsAtPath:configPath.stringByDeletingLastPathComponent isDirectory:nil]) {
+            [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
+        }
+        [manager createFileAtPath:configPath contents:nil attributes:attributes];
+        [@{@"entries":@[],@"snoozedCache":@[]} writeToFile:configPath atomically:YES];
     }
 
     CFNotificationCenterAddObserver(
@@ -2688,8 +2783,12 @@ static void preferencesChanged()
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
 
-    if (enabled) {
-        %init(Axon);
+    dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.list"];
+    if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
+
+    if (enabled && !dpkgInvalid) {
+    //if (enabled) {
+        %init(Selenium);
         if (!vertical) {
             %init(AxonHorizontal);
         } else {
@@ -2698,14 +2797,6 @@ static void preferencesChanged()
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
         return;
     }
-
-    /*NSString *path = @"/var/mobile/Library/Selenium/config.plist";
-    NSString *pathDefault = @"/Library/PreferenceBundles/AutoRedial.bundle/defaults.plist";
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    if (![fileManager fileExistsAtPath:path]) {
-        [fileManager copyItemAtPath:pathDefault toPath:path error:nil];
-    }*/
-
 
     //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);

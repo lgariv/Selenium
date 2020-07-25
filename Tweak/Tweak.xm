@@ -482,9 +482,9 @@ static NSDictionary *info;
 //static double minutesLeft;
 static double secondsLeft;
 
-static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
+static NSString *configPath = @"/var/mobile/Library/Selenium/manager.plist";
 //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
-//static NSString *configPath = @"/Library/Application Support/Selenium/config.plist";
+//static NSString *configPath = @"/Library/Application Support/Selenium/manager.plist";
 static NSMutableDictionary *config;
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
@@ -516,8 +516,9 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
     info = @{@"id": req, @"timeToRemove": removeDate};
     [entries addObject:info];
   }
-  [config setValue:entries forKey:@"snoozedCache"];
+  [config setObject:entries forKey:@"snoozedCache"];
   [config writeToFile:configPath atomically:YES];
+  config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
   //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
@@ -568,8 +569,9 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
       [entries addObject:info];
     }
   }
-  [config setValue:entries forKey:@"entries"];
+  [config setObject:entries forKey:@"entries"];
   [config writeToFile:configPath atomically:YES];
+  config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
   //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
@@ -717,7 +719,7 @@ static void setStateForDND(bool state) {
       [entries addObject:info];
     }
   }
-  [config setValue:entries forKey:@"DND"];
+  [config setObject:entries forKey:@"DND"];
   //[config writeToFile:configPath atomically:YES];
   [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
 }
@@ -939,14 +941,12 @@ UIBackgroundTaskIdentifier bgTask;
 }
 %end
 
-#import "cpc.h"
-
 %hook SpringBoard
 - (void)applicationDidFinishLaunching:(id)application {
     %orig;
-    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showDonateController:) name:@"com.miwix.selenium.donate" object:nil];
 
+    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
@@ -962,7 +962,7 @@ UIBackgroundTaskIdentifier bgTask;
     #pragma mark remove expired notifs from snoozedCache
     NSMutableArray *snoozedCache = [config[@"snoozedCache"] mutableCopy];
     for (NSMutableDictionary *snoozedNotif in snoozedCache) {
-        //NSDate *timestamp = [snoozedNotif objectForKey:@"timeToRemove"];
+        //NSDate *timeStamp = [snoozedNotif objectForKey:@"timeToRemove"];
         if (([[NSDate date] timeIntervalSince1970] - [snoozedNotif[@"timeToRemove"] timeIntervalSince1970]) >= 1) {
             NCNotificationRequest *snoozedNotifReq = snoozedNotif[@"id"];
             storeSnoozed(snoozedNotifReq, YES);
@@ -974,43 +974,41 @@ UIBackgroundTaskIdentifier bgTask;
 - (void)showDonateController:(NSNotification *)notification {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        if (![[NSUserDefaults standardUserDefaults] objectForKey:@"firstTime"]) {
-            [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithBool:YES] forKey:@"firstTime"];
-            //CustomPresentationController *tD = [[CustomPresentationController alloc] init];
+        if ([[config objectForKey:@"firstTime"] isEqualToString:@"YES"]) {
+            [config setValue:@"NO" forKey:@"firstTime"];
+            [config writeToFile:configPath atomically:YES];
             UIViewController *donateController = [[UIViewController alloc] init];
             [[donateController view] setBackgroundColor:[UIColor systemBackgroundColor]];
-            //[donateController setModalPresentationStyle:UIModalPresentationPopover];
-            //donateController.transitioningDelegate = tD;
 
             UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, [donateController view].frame.size.width, [donateController view].frame.size.width)];
             stackView.axis = UILayoutConstraintAxisVertical;
             stackView.alignment = UIStackViewAlignmentCenter;
             stackView.distribution = UIStackViewDistributionEqualSpacing;
             stackView.layoutMarginsRelativeArrangement = YES;
-            stackView.spacing = 10;
+            stackView.spacing = 15;
 
             UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"];
             UIImageView *iconImageView = [[UIImageView alloc] initWithImage:iconImage];
             [iconImageView setFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
             [iconImageView setTranslatesAutoresizingMaskIntoConstraints:YES];
-            [iconImageView.widthAnchor constraintEqualToAnchor:nil constant:100.0f].active = YES;
-            [iconImageView.heightAnchor constraintEqualToAnchor:nil constant:100.0f].active = YES;
+            [iconImageView.widthAnchor constraintEqualToAnchor:nil constant:[[UIScreen mainScreen] bounds].size.width/4.0f].active = YES;
+            [iconImageView.heightAnchor constraintEqualToAnchor:nil constant:[[UIScreen mainScreen] bounds].size.width/4.0f].active = YES;
 
             UILabel *textLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
             NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:@"Thank you for installing Selenium!\n I hope you'll enjoy it😁\n\n Selenium has been in the works for over 5 months, and is based on code from several open-source tweaks. Therefore, it is delivered to you completely free of charge🤑\n\n If you appreciate my work, please consider making a small donation."];
-            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f weight:UIFontWeightBlack] range:NSMakeRange(0,35)];
-            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f] range:NSMakeRange(36,133)];
+            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f weight:UIFontWeightHeavy] range:NSMakeRange(0,35)];
+            [attributedText addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17.0f] range:NSMakeRange(36,262)];
             textLabel.attributedText = attributedText;
             textLabel.textColor = [UIColor labelColor];
             textLabel.textAlignment = NSTextAlignmentCenter;
             textLabel.lineBreakMode = NSLineBreakByWordWrapping;
             textLabel.numberOfLines = 0;
-            
+
             SButton *donateButton = [SButton buttonWithType:UIButtonTypeSystem];
             [donateButton setFrame:CGRectMake(0, 0, 250.0f, 50.0f)]; // Notch Series
             [donateButton setTranslatesAutoresizingMaskIntoConstraints:NO];
-            [donateButton.widthAnchor constraintEqualToAnchor:nil constant:250.0f].active = YES;
-            [donateButton.heightAnchor constraintEqualToAnchor:nil constant:50.0f].active = YES;
+            [donateButton.widthAnchor constraintEqualToAnchor:nil constant:[[UIScreen mainScreen] bounds].size.width/1.5f].active = YES;
+            [donateButton.heightAnchor constraintEqualToAnchor:nil constant:([[UIScreen mainScreen] bounds].size.width/1.5f)/5.0f].active = YES;
             [donateButton setTitle:@"Donate" forState:UIControlStateNormal];
             [donateButton setBackgroundColor:[UIColor colorWithRed:174.0f/255.0f green:130.0f/255.0f blue:155.0f/255.0f alpha:1.0f]];
             [[donateButton titleLabel] setFont:[UIFont systemFontOfSize:19]];
@@ -1034,18 +1032,16 @@ UIBackgroundTaskIdentifier bgTask;
             [stackView setTranslatesAutoresizingMaskIntoConstraints:NO];
             [stackView.centerXAnchor constraintEqualToAnchor:[donateController view].centerXAnchor constant:0].active = YES;
             [stackView.centerYAnchor constraintEqualToAnchor:[donateController view].centerYAnchor constant:-10.0f].active = YES;
-            [stackView.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:-50.0f].active = YES;
-            [stackView.heightAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:50.0f].active = YES;
+            [stackView.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:[[UIScreen mainScreen] bounds].size.width/1.15f].active = YES;
+            //[stackView.heightAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:50.0f].active = YES;
             [textLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
-            [textLabel.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:-100.0f].active = YES;
+            [textLabel.widthAnchor constraintEqualToAnchor:nil constant:[[UIScreen mainScreen] bounds].size.width/1.3f].active = YES;
             [closeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
             [closeButton.topAnchor constraintEqualToAnchor:[donateController view].topAnchor constant:10.0f].active = YES;
             [closeButton.trailingAnchor constraintEqualToAnchor:[donateController view].trailingAnchor constant:-10.0f].active = YES;
 
             [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:donateController animated:YES completion:nil];
             donateController.modalInPopover = YES;
-        } else {
-            //[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"firstTime"];
         }
     });
 }
@@ -1659,7 +1655,7 @@ UIBackgroundTaskIdentifier bgTask;
         //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
         //[picker setMinuteInterval:15];
         //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
-        //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
+        //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timeStamp]];
         picker.hidden = YES;
         [alertController.view addSubview:picker];
 
@@ -2460,8 +2456,8 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     if (isDNDActive == NO) {
         NSMutableArray *entries = [config[@"entries"] mutableCopy];
         for (NSMutableDictionary *entry in entries) {
-            NSString *timestampString = [NSString stringWithFormat:@"%@", entry[@"timeStamp"]];
-            if ([timestampString isEqualToString:@"-2"]) {
+            NSString *timeStampString = [NSString stringWithFormat:@"%@", entry[@"timeStamp"]];
+            if ([timeStampString isEqualToString:@"-2"]) {
                 [[AXNManager sharedInstance] showNotificationRequest:(NCNotificationRequest *)entry[@"id"]];
                 processEntry((NCNotificationRequest *)entry[@"id"], 0, nil);
             }
@@ -2758,7 +2754,7 @@ static void preferencesChanged()
         [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:configInitial] forKey:@"dictionaryKey"];
     }*/
 
-    static NSString *configPath = @"/var/mobile/Library/Selenium/config.plist";
+    static NSString *configPath = @"/var/mobile/Library/Selenium/manager.plist";
 
     NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
     [attributes setObject:[NSNumber numberWithInt:501] forKey:NSFileOwnerAccountID];
@@ -2771,7 +2767,7 @@ static void preferencesChanged()
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [@{@"entries":@[],@"snoozedCache":@[]} writeToFile:configPath atomically:YES];
+        [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES"} writeToFile:configPath atomically:YES];
     }
 
     CFNotificationCenterAddObserver(

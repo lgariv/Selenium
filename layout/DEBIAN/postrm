@@ -1,0 +1,9 @@
+#removing manager.plist
+
+ARG="remove"
+if [ "$ARG" == "$1" ]; then
+    FILE=/var/mobile/Library/Selenium/manager.plist
+    if test -f "$FILE"; then
+        sudo rm -r /var/mobile/Library/Selenium
+    fi
+fi

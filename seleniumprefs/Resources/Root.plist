@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>enabled</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.miwix.seleniumprefs/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.miwix.seleniumprefs</string>
+			<key>key</key>
+			<string>TweakisEnabled</string>
+			<key>label</key>
+			<string>Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Specific Time Interval</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.miwix.seleniumprefs/settingschanged</string>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<integer>5</integer>
+			<key>defaults</key>
+			<string>com.miwix.seleniumprefs</string>
+			<key>key</key>
+			<string>Stepper</string>
+			<key>validValues</key>
+			<array>
+				<integer>1</integer>
+				<integer>5</integer>
+				<integer>10</integer>
+				<integer>15</integer>
+			</array>
+			<key>validTitles</key>
+			<array>
+				<string>1</string>
+				<string>5</string>
+				<string>10</string>
+				<string>15</string>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>open-source</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBLinkTableCell</string>
+			<key>label</key>
+			<string>Source Code</string>
+			<key>subtitle</key>
+			<string>https://github.com/lgariv/Selenium</string>
+			<key>icon</key>
+			<string>Octocat.png</string>
+			<key>url</key>
+			<string>https://github.com/lgariv/Selenium</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>support</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBTwitterCell</string>
+			<key>label</key>
+			<string>Follow me on Twitter</string>
+			<key>user</key>
+			<string>LGarivDev</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBLinkTableCell</string>
+			<key>label</key>
+			<string>Donate me</string>
+			<key>subtitle</key>
+			<string>If you like my work😄</string>
+			<key>icon</key>
+			<string>paypal.png</string>
+			<key>url</key>
+			<string>https://lgariv.github.io/LaVie/Donate.html</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBLinkTableCell</string>
+			<key>label</key>
+			<string>Add my repo</string>
+			<key>subtitle</key>
+			<string>https://lgariv.github.io/LaVie/</string>
+			<key>icon</key>
+			<string>Cydia.png</string>
+			<key>url</key>
+			<string>cydia://url/https://cydia.saurik.com/api/share#?source=https://lgariv.github.io/LaVie/</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Selenium</string>
+</dict>
+</plist>

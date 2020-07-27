@@ -60,7 +60,7 @@ extern NSString const *kCAPackageTypeCAMLBundle;
 - (void)setStateName:(id)arg1;
 @end
 
-@interface CCUIDuneButton : CCUIRoundButton
+@interface CCUISeleniumButton : CCUIRoundButton
 @property (nonatomic, retain) UIView *backgroundView;
 @property (nonatomic, retain) CCUICAPackageView *packageView;
 - (id)initWithGlyphImage:(id)arg1 highlightColor:(id)arg2 useLightStyle:(BOOL)arg3;

@@ -37,4 +37,6 @@
 	<string>ביטול</string>
 	<key>TAPCHANGE</key>
 	<string>הקש כדי לשנות</string>
+	<key>STEPPER</key>
+	<string>סטפר</string>
 </dict>

@@ -40,7 +40,7 @@
 			<key>defaults</key>
 			<string>com.miwix.seleniumprefs</string>
 			<key>key</key>
-			<string>Stepper</string>
+			<string>segmentInterval</string>
 			<key>validValues</key>
 			<array>
 				<integer>1</integer>

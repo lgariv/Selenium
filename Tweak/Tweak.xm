@@ -18,6 +18,7 @@ NSInteger style;
 NSInteger showByDefault;
 NSInteger alignment;
 NSInteger verticalPosition;
+NSInteger segmentInterval;
 CGFloat spacing;
 
 NSDictionary *prefs = nil;
@@ -39,6 +40,7 @@ static NSString *SNOOZEU;
 static NSString *SNOOZEF;
 static NSString *CANCEL;
 static NSString *TAPCHANGE;
+static NSString *STEPPER;
 
 void updateViewConfiguration() {
     if (initialized && [AXNManager sharedInstance].view) {
@@ -241,18 +243,18 @@ void updateViewConfiguration() {
 %end
 
 // iOS13 Support
-/*@interface NCNotificationMasterList <clvc>
-@end*/
+@interface NCNotificationMasterList
+@property(retain, nonatomic) NSMutableArray *notificationSections;
+@end
 @interface NCNotificationStructuredSectionList
 @property (nonatomic,readonly) NSArray * allNotificationRequests;
 @end
-@interface NCNotificationMasterList <clvc>
-@property(retain, nonatomic) NSMutableArray *notificationSections;
+@interface NCNotificationStructuredListViewController <clvc>
 @property (nonatomic,assign) BOOL axnAllowChanges;
 @property (nonatomic,retain) NCNotificationMasterList * masterList;
 -(void)revealNotificationHistory:(BOOL)arg1 animated:(BOOL)arg2 ;
 @end
-%hook NCNotificationMasterList
+%hook NCNotificationStructuredListViewController
 %property (nonatomic,assign) BOOL axnAllowChanges;
 -(id)init {
     %orig;
@@ -416,7 +418,7 @@ UIView *newView;
 UIButton *newButton;
 UIImageView *iconView;
 
-static NSDictionary *info;
+static NSDictionary *notifInfo;
 
 %hook NCNotificationListCellActionButtonsView
 -(void)layoutSubviews {
@@ -474,8 +476,8 @@ static NSDictionary *info;
 
 %new
 - (void)swipedUp:(id)arg1 {
-    info = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
+    notifInfo = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
 }
 %end
 
@@ -487,7 +489,7 @@ static NSString *configPath = @"/var/mobile/Library/Selenium/manager.plist";
 //static NSString *configPath = @"/Library/Application Support/Selenium/manager.plist";
 static NSMutableDictionary *config;
 
-static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
+static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove, BOOL dnd) {
   //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
@@ -499,7 +501,7 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
     if ([req containsString:combinedparts]) {
-        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest *)request timestamp]];
+        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest*)request timestamp]];
         #pragma mark storeSnoozed crash
         entry[@"timeToRemove"] = removeDate;
         remove = entry;
@@ -512,8 +514,8 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove) {
   }
   if (add) {
     NSDictionary *info;
-    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:request.timestamp];
-    info = @{@"id": req, @"timeToRemove": removeDate};
+    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest*)request timestamp]];
+    info = @{@"id": req, @"timeToRemove": removeDate, @"timeStamp": @(dnd ? -2 : 0)};
     [entries addObject:info];
   }
   [config setObject:entries forKey:@"snoozedCache"];
@@ -528,9 +530,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  for (NSMutableDictionary /*__strong*/ *entry in entries) {
-  //for (NSDictionary __strong *entry in entries) {
-    //entry = [entry mutableCopy];
+  for (NSMutableDictionary *entry in entries) {
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
@@ -539,9 +539,9 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
             if (interval == -1) {
                 entry[@"timeStamp"] = @([inputDate timeIntervalSince1970]);
             }
-            /*else if (interval == -2) { //reserved for options that are not time-based
+            else if (interval == -2) { //reserved for options that are not time-based
                 entry[@"timeStamp"] = @(-2);
-            }*/
+            }
         } else if (interval == 0) {
             remove = entry;
         } else {
@@ -555,13 +555,13 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
-    storeSnoozed(request, NO);
+    storeSnoozed(request, NO, (interval == -2) ? YES : NO);
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
         info = @{@"id": req, @"timeStamp": @([inputDate timeIntervalSince1970])};
-        /*else if (interval == -2)
-        info = @{@"id": req, @"timeStamp": @(-2)};*/
+        else if (interval == -2)
+        info = @{@"id": req, @"timeStamp": [NSNumber numberWithDouble:interval]}; //reserved for options that are not time-based
     } else if (interval != 0) {
         info = @{@"id": req, @"timeStamp": @([[NSDate date] timeIntervalSince1970] + interval)};
     }
@@ -680,20 +680,18 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 #pragma mark DND start
 
-/*#import "TweakCCDUNE.h"
+#import "TweakCCSelenium.h"
+
+static BOOL shouldSnooze;
+static BOOL isEnabledForDND; // whether Selenium is enabled for DND (same value as the toggle in CC)
+static BOOL isDNDEnabled; // whether DND itself is turned on or off
+static CGRect ccBounds;
 
 // to make notifications appear when finished
-static void setStateForDND(bool state) {
-    NSDictionary *isEnabled;
-    if (state) {
-        isEnabled = @{@"DNDEnabled": @YES};
-    } else {
-        isEnabled = @{@"DNDEnabled": @NO};
-    }
-	[config setValue:isEnabled forKey:@"DNDEnabled"];
-	//[config writeToFile:configPath atomically:YES];
-	[[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:config] forKey:@"dictionaryKey"];
-}*/
+static void setStateForDND(NSString *state) {
+	[config setObject:state forKey:@"EnabledForDND"];
+	[config writeToFile:configPath atomically:YES];
+}
 
 /*static void processEntryDND(NCNotificationRequest *request) {
   NSString *req = [NSString stringWithFormat:@"%@", request];
@@ -743,7 +741,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
   return stop;
 }
 */
-/*@interface UIView (mxcl)
+@interface UIView (mxcl)
 - (CCUIContentModuleContainerViewController *)parentViewController;
 @end
 
@@ -756,33 +754,8 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 }
 @end
 
-static BOOL shouldSnooze;
-static BOOL isDNDEnabled;
-static BOOL isDuneEnabled;
-static CGRect ccBounds;
-
 // Toggle Notifications
-static void setDuneEnabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-  setStateForDND(YES);
-}
-
-static void setDuneDisabled(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-  setStateForDND(NO);
-}
-
-static void duneEnabled() {
-  CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("xyz.skitty.dune.enabled"), nil, nil, true);
-  shouldSnooze = YES;
-}
-
-static void duneDisabled() {
-  CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("xyz.skitty.dune.disabled"), nil, nil, true);
-  shouldSnooze = NO;
-}
-
-static void preferencesChanged();
-
-%subclass CCUIDuneButton : CCUIRoundButton
+%subclass CCUISeleniumButton : CCUIRoundButton
 %property (nonatomic, retain) UIView *backgroundView;
 %property (nonatomic, retain) CCUICAPackageView *packageView;
 - (void)layoutSubviews {
@@ -792,55 +765,51 @@ static void preferencesChanged();
     self.backgroundView.userInteractionEnabled = NO;
     self.backgroundView.layer.cornerRadius = self.bounds.size.width/2;
     self.backgroundView.layer.masksToBounds = YES;
-    self.backgroundView.backgroundColor = [UIColor systemBlueColor];
+    self.backgroundView.backgroundColor = [UIColor systemBlueColor];//colorWithRed:174.0f/255.0f green:130.0f/255.0f blue:155.0f/255.0f alpha:1.0f];
     self.backgroundView.alpha = 0;
     [self addSubview:self.backgroundView];
 
     self.packageView = [[%c(CCUICAPackageView) alloc] initWithFrame:self.bounds];
-    self.packageView.package = [CAPackage packageWithContentsOfURL:[NSURL fileURLWithPath:@"/Library/Application Support/Dune/StyleMode.ca"] type:kCAPackageTypeCAMLBundle options:nil error:nil];
-    [self.packageView setStateName:@"dark"];
+    //self.packageView.package = [CAPackage packageWithContentsOfURL:[NSURL fileURLWithPath:@"/Library/Application Support/SeleniumExtra.bundle/StyleMode.ca"] type:kCAPackageTypeCAMLBundle options:nil error:nil];
+    //[self.packageView setValue:(id)[UIImage imageWithContentsOfFile:@"/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"].CGImage forKey:@"_packageLayer"];
+    //[self.packageView setStateName:@"dark"];
     [self addSubview:self.packageView];
 
-    [self setHighlighted:NO];
+    isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO;
+    NSLog(@"[Selenium] 3 EnabledForDND: %@ isEnabledForDND: %@",config[@"EnabledForDND"],[config[@"EnabledForDND"] boolValue] ? @"YES" : @"NO");
+    [self setHighlighted:isEnabledForDND];
     [self updateStateAnimated:NO];
   }
 }
 - (void)touchesEnded:(id)arg1 withEvent:(id)arg2 {
-  %orig;
-  if (isDuneEnabled) {
-    duneDisabled();
-    setStateForDND(NO);
-  } else {
-    duneEnabled();
-    setStateForDND(YES);
-  }
-
-  preferencesChanged();
-  [self updateStateAnimated:YES];
+    %orig;
+    isEnabledForDND = !isEnabledForDND;
+    setStateForDND(isEnabledForDND ? @"YES" : @"NO");
+    [self updateStateAnimated:YES];
 }
 %new
 - (void)updateStateAnimated:(bool)animated {
-  if (!isDuneEnabled) {
-    ((CCUILabeledRoundButton *)self.superview).subtitle = [NSString stringWithFormat:@"On"];
-    [self.packageView setStateName:@"On"];
-    if (animated) {
-      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
-        self.backgroundView.alpha = 1;
-      } completion:nil];
+    if (isEnabledForDND) {
+        ((CCUILabeledRoundButton *)self.superview).subtitle = [NSString stringWithFormat:@"On"];
+        //[self.packageView setStateName:@"dark"];
+        if (animated) {
+            [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
+                self.backgroundView.alpha = 1;
+            } completion:nil];
+        } else {
+            self.backgroundView.alpha = 1;
+        }
     } else {
-      self.backgroundView.alpha = 1;
+        ((CCUILabeledRoundButton *)self.superview).subtitle = @"Off";
+        //[self.packageView setStateName:@"light"];
+        if (animated) {
+            [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
+                    self.backgroundView.alpha = 0;
+            } completion:nil];
+        } else {
+            self.backgroundView.alpha = 0;
+        }
     }
-  } else {
-    ((CCUILabeledRoundButton *)self.superview).subtitle = @"Off";
-    [self.packageView setStateName:@"Off"];
-    if (animated) {
-      [UIView animateWithDuration:0.2 delay:0 options:nil animations:^{
-        self.backgroundView.alpha = 0;
-      } completion:nil];
-    } else {
-      self.backgroundView.alpha = 0;
-    }
-  }
 }
 %end
 
@@ -856,17 +825,17 @@ static void preferencesChanged();
       [self.darkButton.buttonContainer setFrame:CGRectMake(0, 0, 72, 91)];
       [self.darkButton.buttonContainer setBounds:CGRectMake(self.darkButton.buttonContainer.frame.origin.x, self.darkButton.buttonContainer.frame.origin.y, self.darkButton.buttonContainer.frame.size.width+10, self.darkButton.buttonContainer.frame.size.height)];
       self.darkButton.view = self.darkButton.buttonContainer;
-      self.darkButton.buttonContainer.buttonView = [[%c(CCUIDuneButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
+      self.darkButton.buttonContainer.buttonView = [[%c(CCUISeleniumButton) alloc] initWithGlyphImage:nil highlightColor:nil useLightStyle:NO];
       [self.darkButton.buttonContainer addSubview:self.darkButton.buttonContainer.buttonView];
       self.darkButton.button = self.darkButton.buttonContainer.buttonView;
 
       self.darkButton.title = @"Snooze";
-      if (isDuneEnabled) {
+      if (isEnabledForDND) {
         self.darkButton.subtitle = [NSString stringWithFormat:@"On"];
-        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"On"];
+        [((CCUISeleniumButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"On"];
       } else {
         self.darkButton.subtitle = @"Off";
-        [((CCUIDuneButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"Off"];
+        [((CCUISeleniumButton *)self.darkButton.buttonContainer.buttonView).packageView setStateName:@"Off"];
       }
       [self.darkButton setLabelsVisible:YES];
 
@@ -907,11 +876,21 @@ static void preferencesChanged();
 
 %hook DNDState
 -(BOOL)isActive {
-  isDNDEnabled = %orig;
-  return %orig;
+    if (isDNDEnabled != %orig) {
+        isDNDEnabled = %orig;
+        config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+        isEnabledForDND = [config[@"EnabledForDND"] isEqualToString:@"YES"] ? YES : NO;
+        if (%orig == YES) {
+            [config setObject:[NSDate date] forKey:@"DNDStartTime"];
+	        [config writeToFile:configPath atomically:YES];
+        } else {
+            [[AXNManager sharedInstance] showDNDNotificationRequests:config[@"entries"]];
+        }
+    }
+    return %orig;
 }
 %end
-*/
+
 #pragma mark DND end
 
 @interface SBAlertItem : NSObject
@@ -953,9 +932,11 @@ UIBackgroundTaskIdentifier bgTask;
     #pragma mark remove already snoozed notifications from entries
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
-        if (([[NSDate date] timeIntervalSince1970] - [entry[@"timeStamp"] doubleValue]) >= 1) {
-            NCNotificationRequest *expiredReq = entry[@"id"];
-            processEntry(expiredReq, 0, nil);
+        if ([entry[@"timeStamp"] doubleValue] != -2) {
+            if (([[NSDate date] timeIntervalSince1970] - [entry[@"timeStamp"] doubleValue]) >= 1 && [entry[@"timeStamp"] doubleValue] != -2) {
+                NCNotificationRequest *expiredReq = entry[@"id"];
+                processEntry(expiredReq, 0, nil);
+            }
         }
     }
 
@@ -963,9 +944,9 @@ UIBackgroundTaskIdentifier bgTask;
     NSMutableArray *snoozedCache = [config[@"snoozedCache"] mutableCopy];
     for (NSMutableDictionary *snoozedNotif in snoozedCache) {
         //NSDate *timeStamp = [snoozedNotif objectForKey:@"timeToRemove"];
-        if (([[NSDate date] timeIntervalSince1970] - [snoozedNotif[@"timeToRemove"] timeIntervalSince1970]) >= 1) {
+        if (([[NSDate date] timeIntervalSince1970] - [snoozedNotif[@"timeToRemove"] timeIntervalSince1970]) >= 1 && [snoozedNotif[@"timeStamp"] doubleValue] != -2) {
             NCNotificationRequest *snoozedNotifReq = snoozedNotif[@"id"];
-            storeSnoozed(snoozedNotifReq, YES);
+            storeSnoozed(snoozedNotifReq, YES, NO);
         }
     }
 }
@@ -1092,546 +1073,19 @@ UIBackgroundTaskIdentifier bgTask;
         alert = [UIAlertController alertControllerWithTitle:SNOOZEN message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     }
 
-  /*[alert addAction:[UIAlertAction actionWithTitle:fMINUTES style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-    if (grouped){
-        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
-        for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
-                [request.content setValue:newTitle forKey:@"_header"];
-            }
-            processEntry(request, 900, nil);
-        }
-
-        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-    } else {
-        [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
-            [requestToProcess.content setValue:newTitle forKey:@"_header"];
-        }
-
-        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:900]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        processEntry(requestToProcess, 900, nil);
-    }
-            #pragma mark pill view
-        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
-        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
-        view.frame = CGRectMake(0,-56,196,50);
-        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
-        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
-
-        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedLabel = @{
-                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
-        pillSnoozedLabel.attributedText = attributedText;
-        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
-        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
-        
-        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedForUntilLabel = @{
-                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fMINUTES attributes:attribsSnoozedLabel];
-        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
-        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [fMINUTES sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
-
-        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
-        NSDictionary *attribsTapToChangeLabel = @{
-                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
-        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
-        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
-        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
-        UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        [view addSubview:pillSnoozedLabel];
-        [view addSubview:pillSnoozedForUntilLabel];
-        [view addSubview:pillTapToChangeLabel];
-        [view addSubview:pillViewButton];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+    /*[alert addAction:[UIAlertAction actionWithTitle:@"Until DND is turned off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        if (grouped){
+            [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];
-  }]];
-  [alert addAction:[UIAlertAction actionWithTitle:oneHOUR style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-    if (grouped){
-        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
-        for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
-                [request.content setValue:newTitle forKey:@"_header"];
+            [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
+            if (![requestToProcess.content.header containsString:@"DND"]) {
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, @"DND"];
+                [requestToProcess.content setValue:newTitle forKey:@"_header"];
             }
-            processEntry(request, 3600, nil);
+            processEntry(requestToProcess, -2, nil);
         }
-
-        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-    } else {
-        [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
-            [requestToProcess.content setValue:newTitle forKey:@"_header"];
-        }
-
-        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:3600]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        processEntry(requestToProcess, 3600, nil);
-    }
-            #pragma mark pill view
-        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
-        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
-        view.frame = CGRectMake(0,-56,196,50);
-        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
-        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
-
-        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedLabel = @{
-                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
-        pillSnoozedLabel.attributedText = attributedText;
-        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
-        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
-        
-        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedForUntilLabel = @{
-                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:oneHOUR attributes:attribsSnoozedLabel];
-        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
-        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [oneHOUR sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
-
-        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
-        NSDictionary *attribsTapToChangeLabel = @{
-                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
-        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
-        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
-        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
-        UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        [view addSubview:pillSnoozedLabel];
-        [view addSubview:pillSnoozedForUntilLabel];
-        [view addSubview:pillTapToChangeLabel];
-        [view addSubview:pillViewButton];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];
-  }]];
-  [alert addAction:[UIAlertAction actionWithTitle:fourHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-    if (grouped){
-        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
-        for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
-                [request.content setValue:newTitle forKey:@"_header"];
-            }
-            processEntry(request, 14400, nil);
-        }
-
-        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-    } else {
-        [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
-            [requestToProcess.content setValue:newTitle forKey:@"_header"];
-        }
-
-        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:14400]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        processEntry(requestToProcess, 14400, nil);
-    }
-            #pragma mark pill view
-        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
-        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
-        view.frame = CGRectMake(0,-56,196,50);
-        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
-        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
-
-        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedLabel = @{
-                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
-        pillSnoozedLabel.attributedText = attributedText;
-        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
-        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
-        
-        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedForUntilLabel = @{
-                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:fourHOURS attributes:attribsSnoozedLabel];
-        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
-        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [fourHOURS sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
-
-        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
-        NSDictionary *attribsTapToChangeLabel = @{
-                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
-        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
-        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
-        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
-        UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        [view addSubview:pillSnoozedLabel];
-        [view addSubview:pillSnoozedForUntilLabel];
-        [view addSubview:pillTapToChangeLabel];
-        [view addSubview:pillViewButton];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];
-  }]];
-  [alert addAction:[UIAlertAction actionWithTitle:eightHOURS style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
-    if (grouped){
-        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
-        for (NCNotificationRequest *request in reqsArray) {
-            if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
-                [request.content setValue:newTitle forKey:@"_header"];
-            }
-            processEntry(request, 28800, nil);
-        }
-
-        NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-    } else {
-        [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
-            [requestToProcess.content setValue:newTitle forKey:@"_header"];
-        }
-
-        NSDictionary* userInfo = @{@"request" : requestToProcess, @"grouped" : [NSNumber numberWithBool:grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:28800]
-                            serviceIdentifier:@"com.miwix.selenium.service"
-                            target:self
-                            selector:@selector(timerOperations:)
-                            userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-
-        processEntry(requestToProcess, 28800, nil);
-    }
-        #pragma mark pill view
-        UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
-        SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
-        view.frame = CGRectMake(0,-56,196,50);
-        UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
-        pillViewButton.frame = CGRectMake(0, 0, 196, 50);
-        [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
-
-        UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedLabel = @{
-                          NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
-        pillSnoozedLabel.attributedText = attributedText;
-        pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
-        CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
-        
-        UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
-        NSDictionary *attribsSnoozedForUntilLabel = @{
-                          NSForegroundColorAttributeName:[UIColor systemBlueColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:eightHOURS attributes:attribsSnoozedLabel];
-        pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
-        pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
-        pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [eightHOURS sizeWithAttributes:@{NSFontAttributeName:boldFont}];
-        pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
-
-        UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
-        NSDictionary *attribsTapToChangeLabel = @{
-                          NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
-                          NSFontAttributeName:boldFont
-                          };
-        NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
-        pillTapToChangeLabel.attributedText = attributedTapToChangeText;
-        pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
-        pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
-        UIWindow *window;
-        for (int i=0; i<([[UIApplication sharedApplication].windows count]-1); i++) {
-            if ([[UIApplication sharedApplication].windows[i] isMemberOfClass:[%c(SBCoverSheetWindow) class]]) {
-                window = [UIApplication sharedApplication].windows[i];
-                break;
-            }
-        }
-        [window addSubview:view];
-        [view addSubview:pillSnoozedLabel];
-        [view addSubview:pillSnoozedForUntilLabel];
-        [view addSubview:pillTapToChangeLabel];
-        [view addSubview:pillViewButton];
-        CGFloat combinedSize;
-        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-        combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
-        CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
-        if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        } else {
-            CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
-            pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
-            pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
-        }
-        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        [UIView animateWithDuration:0.33f animations:^{
-            view.frame = CGRectMake(0,44,196,50);
-            view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-            //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-            //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-            pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-        } completion:^(BOOL finished) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0f
-                target:[NSBlockOperation blockOperationWithBlock:^{
-                    [UIView animateWithDuration:0.33f animations:^{
-                        view.frame = CGRectMake(0,-56,196,50);
-                        view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
-                        //pillSnoozedLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedLabel.center.y);
-                        //pillSnoozedForUntilLabel.center = CGPointMake(view.frame.size.width/2, pillSnoozedForUntilLabel.center.y);
-                        pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
-                    } completion:^(BOOL finished) {
-                        [view removeFromSuperview];
-                    }];
-                }]
-                selector:@selector(main)
-                userInfo:nil
-                repeats:NO
-            ];
-        }];
-  }]];*/
-  /*[alert addAction:[UIAlertAction actionWithTitle:@"Until DND is turned off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-    if (grouped){
-        [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
-    } else {
-        [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
-        if (![requestToProcess.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
-            [requestToProcess.content setValue:newTitle forKey:@"_header"];
-        }
-        processEntry(requestToProcess, -2, nil);
-    }
-  }]];
-  [alert addAction:[UIAlertAction actionWithTitle:@"Until I leave these location" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    }]];*/
+    /*[alert addAction:[UIAlertAction actionWithTitle:@"Until I leave these location" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
     if (![requestToProcess.content.header containsString:SNOOZED]) {
         NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
@@ -1643,9 +1097,8 @@ UIBackgroundTaskIdentifier bgTask;
                             userInfo:nil
                             repeats:NO];
     processEntry(requestToProcess, 86400, nil);
-  }]];*/
-
-    [alert addAction:[UIAlertAction actionWithTitle:@"STEPPER" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    }]];*/
+    [alert addAction:[UIAlertAction actionWithTitle:STEPPER style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
         CGFloat margin = 4.0F;
         
@@ -1787,7 +1240,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         UIDatePicker *picker = [[UIDatePicker alloc] init];
         picker.locale = locale; 
         [picker setDatePickerMode:UIDatePickerModeDateAndTime];
-        [picker setMinuteInterval:5];
+        [picker setMinuteInterval:segmentInterval];
         #pragma mark setMinimumDate fix test
         NSDateFormatter *testFormatter = [[NSDateFormatter alloc] init];
         testFormatter.formatterBehavior = NSDateFormatterBehavior10_4;
@@ -1803,11 +1256,11 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [testFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZ"];
         NSString *stringResultLoopStart = [NSString stringWithFormat:@"%@%@%@",stringResultRest,stringResultStart,stringResultZone];
         NSDate *minimumDate = [testFormatter dateFromString:stringResultLoopStart];
-        for (char i=0; i<13; i++) {
+        for (char i=0; i<((60/segmentInterval)+1); i++) {
             if ([[NSDate date] timeIntervalSinceDate:minimumDate] < 0) {
                 break;
             } else {
-                minimumDate = [NSDate dateWithTimeInterval:300 sinceDate:minimumDate];
+                minimumDate = [NSDate dateWithTimeInterval:(segmentInterval*60) sinceDate:minimumDate];
             }
         }
         [picker setMinimumDate:minimumDate/*[NSDate dateWithTimeInterval:300 sinceDate:[NSDate date]]*/];
@@ -2106,7 +1559,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %new
 -(void)tappedToChange:(UIButton *)sender {
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:info];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
 }
 
 %new
@@ -2469,6 +1922,15 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
+    if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
+        NCNotificationRequest *argFix = arg1;
+        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
+        [argFix.content setValue:newTitle forKey:@"_header"];
+        %orig(argFix);
+        [[AXNManager sharedInstance] hideNotificationRequest:argFix];
+        processEntry(argFix, -2, nil);
+        return;
+    }
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
@@ -2477,27 +1939,27 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [parts removeObject:parts[0]];
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
-            NCNotificationRequest *argFix = arg1;
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
-            [argFix.content setValue:newTitle forKey:@"_header"];
-            %orig(argFix);
-            [[AXNManager sharedInstance] hideNotificationRequest:argFix];
-            secondsLeft = [entry[@"timeStamp"] doubleValue] - [[NSDate date] timeIntervalSince1970] + 1;
-            NSDictionary* userInfo = @{@"request" : argFix};
-            PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
-                                serviceIdentifier:@"com.miwix.selenium.service"
-                                target:self
-                                selector:@selector(timerOperations:)
-                                userInfo:userInfo];
-            [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-            /*NSTimer *timerShow = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
-                                                          interval:nil
-                                                           repeats:NO
-                                                             block:(void (^)(NSTimer *timer))^{
-                                                                 processEntry(argFix, 0, nil);
-                                                                 [[AXNManager sharedInstance] showNotificationRequest:argFix];
-                                                             }];
-            [[NSRunLoop mainRunLoop] addTimer:timerShow forMode:NSDefaultRunLoopMode];*/
+            if ([entry[@"timeStamp"] doubleValue] == -2) {
+                NCNotificationRequest *argFix = arg1;
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", arg1.content.header, @"DND"];
+                [argFix.content setValue:newTitle forKey:@"_header"];
+                %orig(argFix);
+                [[AXNManager sharedInstance] hideNotificationRequest:argFix];
+            } else {
+                NCNotificationRequest *argFix = arg1;
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
+                [argFix.content setValue:newTitle forKey:@"_header"];
+                %orig(argFix);
+                [[AXNManager sharedInstance] hideNotificationRequest:argFix];
+                secondsLeft = [entry[@"timeStamp"] doubleValue] - [[NSDate date] timeIntervalSince1970] + 1;
+                NSDictionary* userInfo = @{@"request" : argFix};
+                PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
+                                    serviceIdentifier:@"com.miwix.selenium.service"
+                                    target:self
+                                    selector:@selector(timerOperations:)
+                                    userInfo:userInfo];
+                [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+            }
             return;
         }
     }
@@ -2508,9 +1970,16 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
             NCNotificationRequest *argFix = arg1;
-            if (![argFix.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
-                [argFix.content setValue:newTitle forKey:@"_header"];
+            if ([entry[@"timeStamp"] doubleValue] == -2) {
+                if (![argFix.content.header containsString:@"DND"]) {
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
+                    [argFix.content setValue:newTitle forKey:@"_header"];
+                }
+            } else {
+                if (![argFix.content.header containsString:SNOOZED]) {
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
+                    [argFix.content setValue:newTitle forKey:@"_header"];
+                }
             }
             %orig(argFix);
             return;
@@ -2657,77 +2126,21 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %end*/
 %end
 
-/* Hide all notifications on open. */
-
-static void displayStatusChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-    [[AXNManager sharedInstance].view reset];
-    [[AXNManager sharedInstance].view refresh];
-}
-
-static void *observer = NULL;
-
-static void reloadPrefs() 
-{
-    if ([NSHomeDirectory() isEqualToString:@"/var/mobile"]) 
-    {
-        CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-
-        if (keyList) 
-        {
-            prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
-
-            if (!prefs) 
-            {
-                prefs = [NSDictionary new];
-            }
-            CFRelease(keyList);
-        }
-    } 
-    else 
-    {
-        prefs = [NSDictionary dictionaryWithContentsOfFile:kSettingsPath];
-    }
-}
-
-
 static BOOL boolValueForKey(NSString *key, BOOL defaultValue) 
 {
     return (prefs && [prefs objectForKey:key]) ? [[prefs objectForKey:key] boolValue] : defaultValue;
 }
 
-static void preferencesChanged() 
-{
-    CFPreferencesAppSynchronize((CFStringRef)kIdentifier);
-    reloadPrefs();
-
-    enabled = boolValueForKey(@"Enabled", YES);
-    enabledForDND = boolValueForKey(@"Enabled", NO);
-    vertical = boolValueForKey(@"Vertical", NO);
-    hapticFeedback = boolValueForKey(@"HapticFeedback", YES);
-    badgesEnabled = boolValueForKey(@"BadgesEnabled", YES);
-    badgesShowBackground = boolValueForKey(@"BadgesShowBackground", YES);
-    darkMode = boolValueForKey(@"DarkMode", NO);
-    sortingMode = [prefs objectForKey:@"SortingMode"] ? [[prefs valueForKey:@"SortingMode"] intValue] : 0;
-    selectionStyle = [prefs objectForKey:@"SelectionStyle"] ? [[prefs valueForKey:@"SelectionStyle"] intValue] : 0;
-    style = [prefs objectForKey:@"Style"] ? [[prefs valueForKey:@"Style"] intValue] : 0;
-    showByDefault = [prefs objectForKey:@"ShowByDefault"] ? [[prefs valueForKey:@"ShowByDefault"] intValue] : 0;
-    alignment = [prefs objectForKey:@"Alignment"] ? [[prefs valueForKey:@"Alignment"] intValue] : 0;
-    verticalPosition = [prefs objectForKey:@"VerticalPosition"] ? [[prefs valueForKey:@"VerticalPosition"] intValue] : 0;
-    spacing = [prefs objectForKey:@"Spacing"] ? [[prefs valueForKey:@"Spacing"] floatValue] : 10.0;
-    fadeEntireCell = boolValueForKey(@"FadeCell", YES);
-    //BOOL dynamicBadges = boolValueForKey(@"dynamicBadges", YES);
-
-    //[AXNManager sharedInstance].style = style;
-    //[AXNManager sharedInstance].fadeEntireCell = fadeEntireCell;
-    //[AXNManager sharedInstance].dynamicBadges = dynamicBadges;
-
-
-    updateViewConfiguration();
+static void loadPrefs() {
+    NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.miwix.seleniumprefs.plist"];
+    if ( [prefs objectForKey:@"TweakisEnabled"] ? [[prefs objectForKey:@"TweakisEnabled"] boolValue] : YES ) {
+		enabled = YES;
+		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
+	}
 }
 
 %ctor{
-    preferencesChanged();
-    
+    loadPrefs();
     NSLog(@"[Selenium] init");
 
     #pragma mark localized strings
@@ -2747,6 +2160,7 @@ static void preferencesChanged()
     SNOOZEF = [tweakBundle localizedStringForKey:@"SNOOZEF" value:@"" table:nil];
     CANCEL = [tweakBundle localizedStringForKey:@"CANCEL" value:@"" table:nil];
     TAPCHANGE = [tweakBundle localizedStringForKey:@"TAPCHANGE" value:@"" table:nil];
+    STEPPER = [tweakBundle localizedStringForKey:@"STEPPER" value:@"" table:nil];
 
     #pragma mark my addition
     /*if (![[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]) {
@@ -2767,21 +2181,14 @@ static void preferencesChanged()
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES"} writeToFile:configPath atomically:YES];
+        NSDate *date = [NSDate date];
+        [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date} writeToFile:configPath atomically:YES];
     }
-
-    CFNotificationCenterAddObserver(
-        CFNotificationCenterGetDarwinNotifyCenter(),
-        &observer,
-        (CFNotificationCallback)preferencesChanged,
-        (CFStringRef)@"com.miwix.selenium/ReloadPrefs",
-        NULL,
-        CFNotificationSuspensionBehaviorDeliverImmediately
-    );
+    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO;
 
     dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.list"];
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
-
     if (enabled && !dpkgInvalid) {
     //if (enabled) {
         %init(Selenium);
@@ -2790,10 +2197,8 @@ static void preferencesChanged()
         } else {
             %init(AxonVertical);
         }
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
         return;
     }
 
-    //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneEnabled, CFSTR("xyz.skitty.dune.enabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-    //CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, setDuneDisabled, CFSTR("xyz.skitty.dune.disabled"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seeseleniumprefsyaprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 }

@@ -37,4 +37,6 @@
 	<string>Cancel</string>
 	<key>TAPCHANGE</key>
 	<string>Tap To Change</string>
+	<key>STEPPER</key>
+	<string>Stepper</string>
 </dict>

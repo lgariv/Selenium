@@ -347,6 +347,28 @@
     }
 }
 
+-(void)showDNDNotificationRequests:(id)reqs {
+    if (!reqs) return;
+    NSMutableArray *allNotifs = [[self allNotificationRequests] mutableCopy];
+    NSMutableArray *DNDNotifs;
+    for (NCNotificationRequest *entry in allNotifs) {
+        for (id req in reqs) {
+            NSArray *notifId = [req[@"id"] componentsSeparatedByString:@"; "];
+            NSMutableArray *parts = [[notifId[5] componentsSeparatedByString:@": "] mutableCopy];
+            [parts removeObject:parts[0]];
+            NSString *identifier = [parts componentsJoinedByString:@""];
+            NSLog(@"[AXNManager] string: %@ identifier: %@",req[@"id"],identifier);
+            if ([entry.notificationIdentifier containsString:identifier] && [req[@"timeStamp"] doubleValue] == -2) {
+                [DNDNotifs addObject:entry];
+            }
+        }
+    }
+
+    for (id req in DNDNotifs) {
+        [self showNotificationRequest:req];
+    }
+}
+
 -(void)hideNotificationRequests:(id)reqs {
     if (!reqs) return;
     for (id req in reqs) {
@@ -363,6 +385,14 @@
 
 -(void)hideAllNotificationRequests {
     [self hideNotificationRequests:[self.clvc allNotificationRequests]];
+}
+
+-(void)showAllNotificationRequests {
+    [self showNotificationRequests:[self.clvc allNotificationRequests]];
+}
+
+-(id)allNotificationRequests {
+    return [self.clvc allNotificationRequests];
 }
 
 -(void)hideAllNotificationRequestsExcept:(id)notification {

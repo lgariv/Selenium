@@ -31,6 +31,7 @@
 
 -(void)showNotificationRequest:(id)req;
 -(void)hideNotificationRequest:(id)req;
+-(void)showDNDNotificationRequests:(id)reqs;
 
 -(void)showNotificationRequests:(id)reqs;
 -(void)hideNotificationRequests:(id)reqs;
@@ -38,9 +39,11 @@
 -(id)requestsForBundleIdentifier:(NSString *)bundleIdentifier;
 -(NSArray *)allRequestsForBundleIdentifier:(NSString *)bundleIdentifier;
 -(void)showNotificationRequestsForBundleIdentifier:(NSString *)bundleIdentifier;
+-(void)showAllNotificationRequests;
 -(void)hideAllNotificationRequests;
 -(void)hideAllNotificationRequestsExcept:(id)notification;
 -(void)revealNotificationHistory:(BOOL)revealed;
+-(id)allNotificationRequests;
 
 -(void)invalidateCountCache;
 -(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier;

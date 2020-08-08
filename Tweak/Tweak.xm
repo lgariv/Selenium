@@ -1849,5 +1849,5 @@ static void loadPrefs() {
         return;
     }
 
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seleniumprefsyaprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seleniumprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 }

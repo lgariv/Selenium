@@ -850,9 +850,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 -(void)setAnimationDuration:(double)arg1 ;
 @end
 
-UIApplication  *springBoardApp;
-UIBackgroundTaskIdentifier bgTask;
-
 %hook CSCoverSheetViewController
 -(void)viewDidDisappear:(BOOL)arg1 {
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.donate" object:nil userInfo:nil];
@@ -995,12 +992,6 @@ UIBackgroundTaskIdentifier bgTask;
     NCNotificationListView *cellListView = (NCNotificationListView *)cellToCapture.superview;
     NCNotificationGroupList *groupList = cellListView.dataSource;
     NSMutableArray *reqsArray = [groupList.orderedRequests copy];
-
-    springBoardApp = [UIApplication sharedApplication];
-    bgTask = [springBoardApp beginBackgroundTaskWithExpirationHandler:^{
-        //[app endBackgroundTask:bgTask];
-        //bgTask = UIBackgroundTaskInvalid;
-    }];
 
     UIAlertController *alert;
 
@@ -1165,10 +1156,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
-        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-            [springBoardApp endBackgroundTask:bgTask];
-            bgTask = UIBackgroundTaskInvalid;
-        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
     }]];
 
@@ -1264,10 +1252,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [alertController.view addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:alertController.view attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
 
         // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
-        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-            [springBoardApp endBackgroundTask:bgTask];
-            bgTask = UIBackgroundTaskInvalid;
-        }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 
         // That's how you should do it in iOS 13.
@@ -1353,10 +1338,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         button.pillView = view;
     }]];
 
-    [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
-        [springBoardApp endBackgroundTask:bgTask];
-        bgTask = UIBackgroundTaskInvalid;
-    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
     [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
 }
 
@@ -1524,9 +1506,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %new
 -(void)stepperButtonUp:(id)sender {
-    [springBoardApp endBackgroundTask:bgTask];
-    bgTask = UIBackgroundTaskInvalid;
-
     SButton *senderFix = sender;
     NSDate *value = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:senderFix.stepper.value]];
 
@@ -1667,9 +1646,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %new
 -(void)buttonUp:(id)sender {
-    [springBoardApp endBackgroundTask:bgTask];
-    bgTask = UIBackgroundTaskInvalid;
-
     SButton *senderFix = sender;
     senderFix.pickerDate = [self performSelector:@selector(getDatePickerValue:) withObject:senderFix.datePicker];
 
@@ -1928,6 +1904,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end
 
+// Controls whether the screen should wake up for a notification when it is arriving. Doesn't have much use now, but will be useful for DND.
 /*%hook SBNCScreenController
 -(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
@@ -1952,6 +1929,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end
 
+// Controls whether a sound will be played (and what sound) for a notification when it is arriving. Doesn't have much use now, but will be useful for DND.
 %hook SBNCSoundController
 -(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
@@ -1976,6 +1954,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end
 
+// Displays a banner for a notification when it is arriving. Doesn't have much use now.
 %hook SBNotificationBannerDestination
 -(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(id)arg3 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
@@ -2000,18 +1979,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end*/
 %end
-
-@interface NCNotificationContentView : NSObject
-@end
-
-@interface UIView (Private)
--(NSArray *)allSubviews;
-@end
-
-static BOOL boolValueForKey(NSString *key, BOOL defaultValue) 
-{
-    return (prefs && [prefs objectForKey:key]) ? [[prefs objectForKey:key] boolValue] : defaultValue;
-}
 
 static void loadPrefs() {
     NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.miwix.seleniumprefs.plist"];

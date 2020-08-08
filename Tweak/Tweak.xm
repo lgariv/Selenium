@@ -5,7 +5,7 @@
 BOOL dpkgInvalid = NO;
 BOOL initialized = NO;
 BOOL enabled;
-BOOL enabledForDND;
+//BOOL enabledForDND; // DND START
 BOOL vertical;
 BOOL badgesEnabled;
 BOOL badgesShowBackground;
@@ -680,7 +680,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 
 #pragma mark DND start
 
-#import "TweakCCSelenium.h"
+/*#import "TweakCCSelenium.h"
 
 static BOOL shouldSnooze;
 static BOOL isEnabledForDND; // whether Selenium is enabled for DND (same value as the toggle in CC)
@@ -740,7 +740,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
   }
   return stop;
 }
-*/
+*//*
 @interface UIView (mxcl)
 - (CCUIContentModuleContainerViewController *)parentViewController;
 @end
@@ -889,7 +889,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     }
     return %orig;
 }
-%end
+%end*/
 
 #pragma mark DND end
 
@@ -1922,7 +1922,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
-    if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
+    /*if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
         NCNotificationRequest *argFix = arg1;
         NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
         [argFix.content setValue:newTitle forKey:@"_header"];
@@ -1930,8 +1930,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [[AXNManager sharedInstance] hideNotificationRequest:argFix];
         processEntry(argFix, -2, nil);
         return;
-    }
-    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
+    }*/ //DND START
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
     for (NSMutableDictionary *entry in entries) {
@@ -1970,17 +1969,17 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
             NCNotificationRequest *argFix = arg1;
-            if ([entry[@"timeStamp"] doubleValue] == -2) {
+            /*if ([entry[@"timeStamp"] doubleValue] == -2) { //DND START
                 if (![argFix.content.header containsString:@"DND"]) {
                     NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
-            } else {
+            } else {*/
                 if (![argFix.content.header containsString:SNOOZED]) {
                     NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
-            }
+            //}
             %orig(argFix);
             return;
         }
@@ -2185,7 +2184,7 @@ static void loadPrefs() {
         [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date} writeToFile:configPath atomically:YES];
     }
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-    isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO;
+    //isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO; DND START
 
     dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.list"];
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];

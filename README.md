@@ -1,6 +1,36 @@
 # Selenium
 
-TODO:
+<span style="Color:#AE829B"> **Introduction** </span>
+
+With Selenium, users can snooze notifications, which causes them to disappear for a chosen period of time before reappearing. Notifications reappear at the same place they first appeared at, with an indicator to let you know they where snoozed. Snoozing notifications will be persistent through resprings.
+
+<span style="Color:#AE829B"> **How it works** </span>
+
+Selenium is based on code from several open-source tweaks, including Dune, QuietDown, with the actual notification snoozing being managed by Axon library combined with PCSimpleTimer.
+
+Soon enough, Selenium will be open-sourced as well.
+
+<span style="Color:#AE829B"> **Features** </span>
+
+• Snooze notifications until a specific date.
+
+• Snooze notifications for a chosen amount of time.
+
+• Persistence through resprings, reboots (in jailbroken mode).
+
+• Tap to change option appear after snoozing.
+
+• Localised for English, Hebrew, and French.
+
+<span style="Color:#AE829B"> **Future Plans** </span>
+
+• Snooze incoming notifications while DND is on.
+
+• Snooze notifications until I leave this location.
+
+• Snooze notifications until I arrive a location.
+
+# To Do:
 
 • ~Fix persistence through resprings (as well as the "SNOOZED" indicator).~ ✅
 

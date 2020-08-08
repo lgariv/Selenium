@@ -70,127 +70,6 @@ static NSString *STEPPER;
 
 #pragma mark Notification management
 
-%hook NCNotificationCombinedListViewController
-
-%property (nonatomic,assign) BOOL axnAllowChanges;
-
-/* Store this object for future use. */
-
--(id)init {
-    %orig;
-    [AXNManager sharedInstance].clvc = self;
-    self.axnAllowChanges = NO;
-    return self;
-}
-
-/* Replace notification management functions with our logic. */
-
--(bool)insertNotificationRequest:(NCNotificationRequest *)req forCoalescedNotification:(id)arg2 {
-    if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
-    [[AXNManager sharedInstance] insertNotificationRequest:req];
-    [[AXNManager sharedInstance].view refresh];
-
-    if (req.bulletin.sectionID) {
-        NSString *bundleIdentifier = req.bulletin.sectionID;
-        if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
-    }
-
-    if (![AXNManager sharedInstance].view.selectedBundleIdentifier && showByDefault == 1) {
-        [[AXNManager sharedInstance].view reset];
-    }
-
-    return YES;
-}
-
--(bool)removeNotificationRequest:(NCNotificationRequest *)req forCoalescedNotification:(id)arg2 {
-    if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
-
-    NSString *identifier = [[req notificationIdentifier] copy];
-
-    [[AXNManager sharedInstance] removeNotificationRequest:req];
-    [[AXNManager sharedInstance].view refresh];
-
-    if (req.bulletin.sectionID) {
-        NSString *bundleIdentifier = req.bulletin.sectionID;
-        if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
-    }
-
-    if ([AXNManager sharedInstance].view.showingLatestRequest && identifier &&
-    [[[AXNManager sharedInstance].latestRequest notificationIdentifier] isEqualToString:identifier]) {
-        %orig;
-    }
-
-    return YES;
-}
-
--(bool)modifyNotificationRequest:(NCNotificationRequest *)req forCoalescedNotification:(id)arg2 {
-    if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
-
-    NSString *identifier = [[req notificationIdentifier] copy];
-
-    [[AXNManager sharedInstance] modifyNotificationRequest:req];
-    [[AXNManager sharedInstance].view refresh];
-
-    if (req.bulletin.sectionID) {
-        NSString *bundleIdentifier = req.bulletin.sectionID;
-        if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
-    }
-
-    if ([AXNManager sharedInstance].view.showingLatestRequest && identifier &&
-    [[[AXNManager sharedInstance].latestRequest notificationIdentifier] isEqualToString:identifier]) {
-        %orig;
-    }
-
-    return YES;
-}
-
--(bool)hasContent {
-    if ([AXNManager sharedInstance].view.list && [[AXNManager sharedInstance].view.list count] > 0) return YES;
-    return %orig;
-}
-
--(void)viewDidAppear:(BOOL)animated {
-    %orig;
-    [[AXNManager sharedInstance].view reset];
-    [[AXNManager sharedInstance].view refresh];
-}
-
-/* Fix pull to clear all tweaks. */
-
--(void)_clearAllPriorityListNotificationRequests {
-    [[AXNManager sharedInstance].dispatcher destination:nil requestsClearingNotificationRequests:[self allNotificationRequests]];
-}
-
--(void)_clearAllNotificationRequests {
-    [[AXNManager sharedInstance].dispatcher destination:nil requestsClearingNotificationRequests:[self allNotificationRequests]];
-}
-
--(void)clearAll {
-    [[AXNManager sharedInstance].dispatcher destination:nil requestsClearingNotificationRequests:[self axnNotificationRequests]];
-}
-
-/* Compatibility thing for other tweaks. */
-
-%new
--(id)axnNotificationRequests {
-    NSMutableOrderedSet *allRequests = [NSMutableOrderedSet new];
-    for (NSString *key in [[AXNManager sharedInstance].notificationRequests allKeys]) {
-        [allRequests addObjectsFromArray:[[AXNManager sharedInstance] requestsForBundleIdentifier:key]];
-    }
-    return allRequests;
-}
-
-%new
--(void)revealNotificationHistory:(BOOL)revealed {
-  [self setDidPlayRevealHaptic:YES];
-  [self forceNotificationHistoryRevealed:revealed animated:NO];
-  [self setNotificationHistorySectionNeedsReload:YES];
-  [self _reloadNotificationHistorySectionIfNecessary];
-  if (!revealed && [self respondsToSelector:@selector(clearAllCoalescingControlsCells)]) [self clearAllCoalescingControlsCells];
-}
-
-%end
-
 // iOS13 Support
 @interface NCNotificationMasterList
 @property(retain, nonatomic) NSMutableArray *notificationSections;
@@ -215,26 +94,12 @@ static NSString *STEPPER;
 -(bool)insertNotificationRequest:(NCNotificationRequest *)req {
     if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
     [[AXNManager sharedInstance] insertNotificationRequest:req];
-    [[AXNManager sharedInstance].view refresh];
-
-    /*if (req.bulletin.sectionID) {
-        NSString *bundleIdentifier = req.bulletin.sectionID;
-        if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
-    }*/
     %orig;
-
-    if (![AXNManager sharedInstance].view.selectedBundleIdentifier && showByDefault == 1) {
-        [[AXNManager sharedInstance].view reset];
-    }
-
     return YES;
 }
 
 -(bool)removeNotificationRequest:(NCNotificationRequest *)req {
     if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
-
-    //NSString *identifier = [[req notificationIdentifier] copy];
-
     [[AXNManager sharedInstance] removeNotificationRequest:req];
     [[AXNManager sharedInstance].view refresh];
 
@@ -243,18 +108,13 @@ static NSString *STEPPER;
         if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
     }
 
-    //if ([AXNManager sharedInstance].view.showingLatestRequest && identifier &&
-    //[[[AXNManager sharedInstance].latestRequest notificationIdentifier] isEqualToString:identifier]) {
-        %orig;
-    //}
+    %orig;
 
     return YES;
 }
 
 -(bool)modifyNotificationRequest:(NCNotificationRequest *)req {
     if (self.axnAllowChanges) return %orig;     // This condition is true when Axon is updating filtered notifications for display.
-
-    //NSString *identifier = [[req notificationIdentifier] copy];
 
     [[AXNManager sharedInstance] modifyNotificationRequest:req];
     [[AXNManager sharedInstance].view refresh];
@@ -264,59 +124,11 @@ static NSString *STEPPER;
         if ([bundleIdentifier isEqualToString:[AXNManager sharedInstance].view.selectedBundleIdentifier]) %orig;
     }
 
-    //if ([AXNManager sharedInstance].view.showingLatestRequest && identifier &&
-    //[[[AXNManager sharedInstance].latestRequest notificationIdentifier] isEqualToString:identifier]) {
-        %orig;
-    //}
+    %orig;
 
     return YES;
 }
-
--(void)viewDidAppear:(BOOL)animated {
-    %orig;
-    [[AXNManager sharedInstance].view reset];
-    [[AXNManager sharedInstance].view refresh];
-}
-
-%new
--(id)axnNotificationRequests {
-    NSMutableOrderedSet *allRequests = [NSMutableOrderedSet new];
-    for (NSString *key in [[AXNManager sharedInstance].notificationRequests allKeys]) {
-        [allRequests addObjectsFromArray:[[AXNManager sharedInstance] requestsForBundleIdentifier:key]];
-    }
-    return allRequests;
-}
-
-%new
--(NSSet *)allNotificationRequests {
-  NSArray *array = [NSMutableArray new];
-  NCNotificationMasterList *masterList = [self masterList];
-  for(NCNotificationStructuredSectionList *item in [masterList notificationSections]) {
-    array = [array arrayByAddingObjectsFromArray:[item allNotificationRequests]];
-  }
-  return [[NSSet alloc] initWithArray:array];
-}
-
-%new
--(void)revealNotificationHistory:(BOOL)revealed {
-  [self revealNotificationHistory:revealed animated:true];
-}
-
 %end
-@interface SBFStaticWallpaperView : UIView 
-@property (nonatomic, retain) NSString *displayedImageHashString;
-@end
-%hook SBFStaticWallpaperView
-
--(void)_setDisplayedImage:(UIImage *)image
-{
-    %orig;
-        //[[AXNManager sharedInstance] updateWallpaperColors:image];
-}
-
-%end
-
-#pragma mark my additions
 
 @interface NCNotificationViewController : UIViewController {
     NCNotificationRequest* _notificationRequest;

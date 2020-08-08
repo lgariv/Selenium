@@ -7,6 +7,5 @@ export TARGET = iphone:clang:13.5:11.0
 export PACKAGE_VERSION = $(THEOS_PACKAGE_BASE_VERSION)
 
 include $(THEOS)/makefiles/common.mk
-SUBPROJECTS += Tweak #Prefs
-SUBPROJECTS += seleniumprefs
+SUBPROJECTS += Tweak seleniumprefs
 include $(THEOS_MAKE_PATH)/aggregate.mk

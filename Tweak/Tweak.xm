@@ -1,25 +1,11 @@
 #import "Tweak.h"
 #import "AXNManager.h"
-#import "CustomUIStepper.h"
 
 BOOL dpkgInvalid = NO;
 BOOL initialized = NO;
 BOOL enabled;
 //BOOL enabledForDND; // DND START
-BOOL vertical;
-BOOL badgesEnabled;
-BOOL badgesShowBackground;
-BOOL hapticFeedback;
-BOOL darkMode;
-BOOL fadeEntireCell;
-NSInteger sortingMode;
-NSInteger selectionStyle;
-NSInteger style;
-NSInteger showByDefault;
-NSInteger alignment;
-NSInteger verticalPosition;
 NSInteger segmentInterval;
-CGFloat spacing;
 
 NSDictionary *prefs = nil;
 
@@ -41,21 +27,6 @@ static NSString *SNOOZEF;
 static NSString *CANCEL;
 static NSString *TAPCHANGE;
 static NSString *STEPPER;
-
-void updateViewConfiguration() {
-    if (initialized && [AXNManager sharedInstance].view) {
-        [AXNManager sharedInstance].view.hapticFeedback = hapticFeedback;
-        [AXNManager sharedInstance].view.badgesEnabled = badgesEnabled;
-        [AXNManager sharedInstance].view.badgesShowBackground = badgesShowBackground;
-        [AXNManager sharedInstance].view.selectionStyle = selectionStyle;
-        [AXNManager sharedInstance].view.sortingMode = sortingMode;
-        [AXNManager sharedInstance].view.style = style;
-        [AXNManager sharedInstance].view.darkMode = darkMode;
-        [AXNManager sharedInstance].view.showByDefault = showByDefault;
-        [AXNManager sharedInstance].view.spacing = spacing;
-        [AXNManager sharedInstance].view.alignment = alignment;
-    }
-}
 
 %group Selenium
 
@@ -96,28 +67,6 @@ void updateViewConfiguration() {
 }
 
 %end
-
-#pragma mark Inject the Axon view into NC
-
-#pragma mark disabled
-
-/*%hook SBDashBoardNotificationAdjunctListViewController
-
-%property (nonatomic, retain) AXNView *axnView;
-
-
--(BOOL)hasContent {
-    return YES;
-}
-
-%end*/
-
-#pragma mark disabled
-
-// iOS13 Support
-/*%hook CSNotificationAdjunctListViewController
-%property (nonatomic, retain) AXNView *axnView;
-%end*/
 
 #pragma mark Notification management
 
@@ -660,7 +609,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @end
 
 // Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
-// [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.]
+// [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.] [Actually now that I think about it 2 months later, it could potentially be used to make notifications snoozing persistent through reboots even when in non-jailbroken modes (because 1st party apps notifications use this type of timer, such as alarms and reminders), but that would require a completly different implementation of the actual notification snoozing part. I tried to do this before and failed, and there's no much info on how notifications (BBBulletin, BBserver etc.) actually work. for this benfit alone, this would be way too much effort for me.]
 @interface PCSimpleTimer : NSObject {
 	NSRunLoop* _timerRunLoop;
 }
@@ -668,15 +617,6 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 -(void)scheduleInRunLoop:(id)arg1 ;
 -(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
 @end
-
-/*@interface PCPersistentTimer : NSObject {
-    PCSimpleTimer* _simpleTimer;
-	id _userInfo;
-}
--(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
--(void)scheduleInRunLoop:(id)arg1 ;
--(id)userInfo;
-@end*/
 
 #pragma mark DND start
 
@@ -1418,15 +1358,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         bgTask = UIBackgroundTaskInvalid;
     }]];
     [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
-
-    // That's how you should do it in iOS 13.
-    /*for (UIWindow *window in [UIApplication sharedApplication].windows) {
-        if (window.isKeyWindow) {
-            [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
-            [window.rootViewController presentViewController:alert animated:YES completion:nil];
-            break;
-        }
-    }*/
 }
 
 %new
@@ -1918,7 +1849,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     }
     return %orig;
 }
-%end*/
+%end*/ //DND START
 
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
@@ -2077,54 +2008,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 -(NSArray *)allSubviews;
 @end
 
-%group AxonVertical
-%hook NCNotificationCombinedListViewController
-%property (nonatomic,assign) BOOL axnAllowChanges;
-
--(UIEdgeInsets)insetMargins {
-    if (verticalPosition == 0) return UIEdgeInsetsMake(0, -96, 0, 0);
-    else return UIEdgeInsetsMake(0, 0, 0, -96);
-}
-
--(CGSize)collectionView:(UICollectionView *)arg1 layout:(UICollectionViewLayout*)arg2 sizeForItemAtIndexPath:(id)arg3 {
-    CGSize orig = %orig;
-    UIView *view = [arg1 cellForItemAtIndexPath:arg3].contentView;
-    for(id item in view.allSubviews) {
-      if([item isKindOfClass:[objc_getClass("NCNotificationContentView") class]]) {
-        return CGSizeMake(orig.width - 96, ((UIView *)item).frame.size.height+30);
-      }
-    }
-    return CGSizeMake(orig.width - 96, orig.height);
-}
-%end
-
-// iOS 13 Support
-%hook NCNotificationMasterList
-%property (nonatomic,assign) BOOL axnAllowChanges;
--(UIEdgeInsets)insetMargins {
-    if (verticalPosition == 0) return UIEdgeInsetsMake(0, -96, 0, 0);
-    else return UIEdgeInsetsMake(0, 0, 0, -96);
-}
-%end
-%end
-
-%group AxonHorizontal
-%hook SBDashBoardCombinedListViewController
--(void)viewDidLoad{
-    %orig;
-    [AXNManager sharedInstance].sbclvc = self;
-}
-%end
-
-// iOS 13 Support
-/*%hook CSCombinedListViewController
--(void)viewDidLoad{
-    %orig;
-    [AXNManager sharedInstance].sbclvc = self;
-}
-%end*/
-%end
-
 static BOOL boolValueForKey(NSString *key, BOOL defaultValue) 
 {
     return (prefs && [prefs objectForKey:key]) ? [[prefs objectForKey:key] boolValue] : defaultValue;
@@ -2161,12 +2044,6 @@ static void loadPrefs() {
     TAPCHANGE = [tweakBundle localizedStringForKey:@"TAPCHANGE" value:@"" table:nil];
     STEPPER = [tweakBundle localizedStringForKey:@"STEPPER" value:@"" table:nil];
 
-    #pragma mark my addition
-    /*if (![[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"]) {
-        NSMutableDictionary *configInitial = [@{@"entries":@[],@"DND":@[],@"location":@[],@"snoozedCache":@[],@"DNDEnabled":@NO} mutableCopy];
-        [[NSUserDefaults standardUserDefaults] setObject:[NSDictionary dictionaryWithDictionary:configInitial] forKey:@"dictionaryKey"];
-    }*/
-
     static NSString *configPath = @"/var/mobile/Library/Selenium/manager.plist";
 
     NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
@@ -2184,20 +2061,14 @@ static void loadPrefs() {
         [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date} writeToFile:configPath atomically:YES];
     }
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-    //isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO; DND START
+    //isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO; //DND START
 
     dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.list"];
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
     if (enabled && !dpkgInvalid) {
-    //if (enabled) {
         %init(Selenium);
-        if (!vertical) {
-            %init(AxonHorizontal);
-        } else {
-            %init(AxonVertical);
-        }
         return;
     }
 
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seeseleniumprefsyaprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seleniumprefsyaprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 }

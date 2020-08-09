@@ -337,7 +337,6 @@
     if ([self.clvc respondsToSelector:@selector(removeNotificationRequest:forCoalescedNotification:)]) [self.clvc removeNotificationRequest:req forCoalescedNotification:[self coalescedNotificationForRequest:req]];
     else [self.clvc removeNotificationRequest:req];
     self.clvc.axnAllowChanges = NO;
-
 }
 
 -(void)showNotificationRequests:(id)reqs {

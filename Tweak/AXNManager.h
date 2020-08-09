@@ -46,6 +46,7 @@
 -(id)allNotificationRequests;
 
 -(void)invalidateCountCache;
+-(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier;
 -(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier;
 
 @end

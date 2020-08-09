@@ -1,8 +1,8 @@
 Package: com.miwix.selenium
 Name: Selenium
 Depends: mobilesubstrate, firmware (>= 13.0)
-Conflicts: me.nepeta.axon, me.nepeta.axonreborn
-Version: 1.0.0
+Conflicts: me.nepeta.axon
+Version: 1.1.0
 Architecture: iphoneos-arm
 Description: Snooze notifications. Focus on what matters⏱
 Maintainer: Lavie Gariv

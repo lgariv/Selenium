@@ -1421,7 +1421,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     NCNotificationGroupList *groupList = cellListView.dataSource;
     NSMutableArray *reqsArray = [groupList.orderedRequests copy];
 
-    if(senderFix.grouped) {
+    if (senderFix.grouped) {
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:SNOOZED]) {
@@ -1792,6 +1792,51 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %end*/
 %end
 
+%group AxonFix // Trying to fix Axon compatibility issues
+%hook AXNManager
+-(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier {
+    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+    unsigned int count = 0;
+    for (id entry in allNotifs) {
+        NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
+        NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
+        NSString *snoozedBundleID = (NSString*)parts[0];
+        NSLog(@"[AXNCOUNT] bundleIdentifier: %@ snoozedBundleID: %@",bundleIdentifier,snoozedBundleID);
+        if ([bundleIdentifier isEqualToString:snoozedBundleID]) count++;
+    }
+
+    NSLog(@"[AXNCOUNT] bundleID: %@", bundleIdentifier);
+    if (%orig(bundleIdentifier)-count < 0)
+    return 0;
+    else
+    return %orig(bundleIdentifier)-count;
+}
+
+-(void)showNotificationRequest:(id)req {
+    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+    NCNotificationRequest *request = req;
+    NSString *reqString = [NSString stringWithFormat:@"%@",req];
+    if ([[request.content.header lowercaseString] containsString:@"snoozed"]) {
+        for (id entry in allNotifs) {
+            NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@"timestamp: "] mutableCopy];
+            NSString *identifier = (NSString*)parts[1];
+            if ([reqString containsString:identifier]) return;
+        }
+    }
+
+    %orig;
+    [self updateCountForBundleIdentifier:[(NCNotificationRequest*)req sectionIdentifier]];
+    [self.view refresh];
+}
+
+-(void)hideNotificationRequest:(id)req {
+    %orig;
+    [self updateCountForBundleIdentifier:[(NCNotificationRequest*)req sectionIdentifier]];
+    [self.view refresh];
+}
+%end
+%end
+
 static void loadPrefs() {
     NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.miwix.seleniumprefs.plist"];
     if ( [prefs objectForKey:@"TweakisEnabled"] ? [[prefs objectForKey:@"TweakisEnabled"] boolValue] : YES ) {
@@ -1846,6 +1891,7 @@ static void loadPrefs() {
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
     if (enabled && !dpkgInvalid) {
         %init(Selenium);
+        %init(AxonFix);
         return;
     }
 

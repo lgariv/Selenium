@@ -3,9 +3,7 @@ Name: Selenium
 Conflicts: me.nepeta.axon, me.nepeta.axonreborn
 Version: 1.0.0
 Architecture: iphoneos-arm
-Depiction: https://lgariv.github.io/LaVie/depictions/?p=com.miwix.selenium
-Description: Focus on what matters ⏱
-Icon: https://lgariv.github.io/LaVie/depictions/com.miwix.selenium/icon.png
+Description: Snooze notifications. Focus on what matters⏱
 Maintainer: Lavie Gariv
 Author: Lavie Gariv
 Section: Tweaks

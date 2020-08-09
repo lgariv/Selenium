@@ -822,7 +822,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
         } else {
             [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
             if (![requestToProcess.content.header containsString:@"DND"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, @"DND"];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", requestToProcess.content.header, @"DND"];
                 [requestToProcess.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(requestToProcess, -2, nil);
@@ -831,7 +831,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     /*[alert addAction:[UIAlertAction actionWithTitle:@"Until I leave these location" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
     if (![requestToProcess.content.header containsString:SNOOZED]) {
-        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
+        NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", requestToProcess.content.header, SNOOZED];
         [requestToProcess.content setValue:newTitle forKey:@"_header"];
     }
     [NSTimer scheduledTimerWithTimeInterval:86400
@@ -1425,7 +1425,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, -1, value);
@@ -1440,7 +1440,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
+            NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", senderFix.request.content.header, SNOOZED];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
@@ -1571,7 +1571,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, -1, senderFix.pickerDate);
@@ -1586,7 +1586,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
+            NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", senderFix.request.content.header, SNOOZED];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
@@ -1643,7 +1643,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
     /*if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
         NCNotificationRequest *argFix = arg1;
-        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
+        NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, @"DND"];
         [argFix.content setValue:newTitle forKey:@"_header"];
         %orig(argFix);
         [[AXNManager sharedInstance] hideNotificationRequest:argFix];
@@ -1659,13 +1659,13 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         if ([req containsString:combinedparts]) {
             if ([entry[@"timeStamp"] doubleValue] == -2) {
                 NCNotificationRequest *argFix = arg1;
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", arg1.content.header, @"DND"];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", arg1.content.header, @"DND"];
                 [argFix.content setValue:newTitle forKey:@"_header"];
                 %orig(argFix);
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
             } else {
                 NCNotificationRequest *argFix = arg1;
-                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, SNOOZED];
                 [argFix.content setValue:newTitle forKey:@"_header"];
                 %orig(argFix);
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
@@ -1690,12 +1690,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
             NCNotificationRequest *argFix = arg1;
             /*if ([entry[@"timeStamp"] doubleValue] == -2) { //DND START
                 if (![argFix.content.header containsString:@"DND"]) {
-                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, @"DND"];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
             } else {*/
                 if (![argFix.content.header containsString:SNOOZED]) {
-                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, SNOOZED];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
             //}

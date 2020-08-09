@@ -1,6 +1,6 @@
 Package: com.miwix.selenium
 Name: Selenium
-Depends: mobilesubstrate, firmware (>= 13.0)
+Depends: mobilesubstrate, ws.hbang.common, firmware (>= 13.0)
 Conflicts: me.nepeta.axon
 Version: 1.1.0
 Architecture: iphoneos-arm

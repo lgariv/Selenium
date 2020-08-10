@@ -15,7 +15,7 @@
 	<string>Pendant 45 minutes</string>
 	<key>oneHOUR</key>
 	<string>Pendant 1 heure</string>
-	<key>twoHOUR</key>
+	<key>twoHOURS</key>
 	<string>Pendant 2 heures</string>
 	<key>threeHOURS</key>
 	<string>Pendant 3 heures</string>
@@ -25,18 +25,18 @@
 	<string>Pendant 6 heures</string>
 	<key>eightHOURS</key>
 	<string>Pendant 8 heures</string>
-	<key>eightHOURS</key>
+	<key>twelveHOURS</key>
 	<string>Pendant 12 heures</string>
 	<key>sTIME</key>
-	<string>Durée personnalisée</string>
-	<key>SNOOZEF</key>
-	<string>Snooze Pendant </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<string>Jusqu'à une certaine heure</string>
 	<key>SNOOZEU</key>
-	<string>Snooze jusqu'à </string>
+	<string>Snooze jusqu'à </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>SNOOZEF</key>
+	<string>Snooze pendant </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
 	<key>CANCEL</key>
-	<string>Cancel</string>
+	<string>Annuler</string>
 	<key>TAPCHANGE</key>
 	<string>Appuyez Pour Changer</string>
 	<key>STEPPER</key>
-	<string></string>
+	<string>Durée personnalisée</string>
 </dict>

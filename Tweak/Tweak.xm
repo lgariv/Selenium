@@ -1884,15 +1884,13 @@ static void loadPrefs() {
 
     NSFileManager *manager = [NSFileManager defaultManager];
 
-    NSDate *date = [NSDate date];
-    NSDictionary *baseDictionary = @{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date};
-
     if (![manager fileExistsAtPath:configPath]) {
         if(![manager fileExistsAtPath:configPath.stringByDeletingLastPathComponent isDirectory:nil]) {
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        [baseDictionary writeToFile:configPath atomically:YES];
+        NSDate *date = [NSDate date];
+        [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date} writeToFile:configPath atomically:YES];
     }
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     //isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO; //DND START

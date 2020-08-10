@@ -19,8 +19,12 @@ static NSString *fMINUTES;
 static NSString *tMINUTES;
 static NSString *ffMINUTES;
 static NSString *oneHOUR;
+static NSString *twoHOURS;
+static NSString *threeHOURS;
 static NSString *fourHOURS;
+static NSString *sixHOURS;
 static NSString *eightHOURS;
+static NSString *twelveHOURS;
 static NSString *sTIME;
 static NSString *SNOOZEU;
 static NSString *SNOOZEF;
@@ -717,7 +721,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             stackView.layoutMarginsRelativeArrangement = YES;
             stackView.spacing = 15;
 
-            UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"];
+            UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/PreferenceLoader/Preferences/SeleniumPrefs.plist"];
             UIImageView *iconImageView = [[UIImageView alloc] initWithImage:iconImage];
             [iconImageView setFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
             [iconImageView setTranslatesAutoresizingMaskIntoConstraints:YES];
@@ -822,7 +826,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
         } else {
             [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
             if (![requestToProcess.content.header containsString:@"DND"]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", requestToProcess.content.header, @"DND"];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, @"DND"];
                 [requestToProcess.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(requestToProcess, -2, nil);
@@ -831,7 +835,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     /*[alert addAction:[UIAlertAction actionWithTitle:@"Until I leave these location" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
     [[AXNManager sharedInstance] hideNotificationRequest:requestToProcess];
     if (![requestToProcess.content.header containsString:SNOOZED]) {
-        NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", requestToProcess.content.header, SNOOZED];
+        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", requestToProcess.content.header, SNOOZED];
         [requestToProcess.content setValue:newTitle forKey:@"_header"];
     }
     [NSTimer scheduledTimerWithTimeInterval:86400
@@ -925,7 +929,7 @@ stackView.alignment = UIStackViewAlignmentCenter;
             stepperLabel.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"];
             stepper.value = [(NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperValue"] doubleValue];
         } else {
-            stepperLabel.text = @"15 Minutes";
+            stepperLabel.text = fMINUTES;
             stepper.value = 1;
         }
         //[stepperLabel setFont:[UIFont boldSystemFontOfSize:17.0f]];
@@ -1209,34 +1213,34 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
     switch ((int)stepper.value) {
         case 1:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"15 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = fMINUTES;
             break;
         case 2:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"30 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = tMINUTES;
             break;
         case 3:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"45 Minutes";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = ffMINUTES;
             break;
         case 4:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"1 Hour";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = oneHOUR;
             break;
         case 5:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"2 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = twoHOURS;
             break;
         case 6:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"3 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = threeHOURS;
             break;
         case 7:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"4 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = fourHOURS;
             break;
         case 8:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"6 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = sixHOURS;
             break;
         case 9:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"8 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = eightHOURS;
             break;
         case 10:
-            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = @"12 Hours";
+            [(NSArray<UILabel*>*)stepper.stepperLabel.arrangedSubviews firstObject].text = twelveHOURS;
             break;
     }
     [[NSUserDefaults standardUserDefaults] setValue:[NSNumber numberWithFloat:stepper.value] forKey:@"lastStepperValue"];
@@ -1425,7 +1429,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", request.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, -1, value);
@@ -1440,7 +1444,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", senderFix.request.content.header, SNOOZED];
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
@@ -1571,7 +1575,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [[AXNManager sharedInstance] hideNotificationRequests:reqsArray];
         for (NCNotificationRequest *request in reqsArray) {
             if (![request.content.header containsString:SNOOZED]) {
-                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", request.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", request.content.header, SNOOZED];
                 [request.content setValue:newTitle forKey:@"_header"];
             }
             processEntry(request, -1, senderFix.pickerDate);
@@ -1586,7 +1590,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
-            NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", senderFix.request.content.header, SNOOZED];
+            NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", senderFix.request.content.header, SNOOZED];
             [senderFix.request.content setValue:newTitle forKey:@"_header"];
         }
         #pragma mark PCPersistentTimer setup
@@ -1643,7 +1647,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
     /*if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
         NCNotificationRequest *argFix = arg1;
-        NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, @"DND"];
+        NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
         [argFix.content setValue:newTitle forKey:@"_header"];
         %orig(argFix);
         [[AXNManager sharedInstance] hideNotificationRequest:argFix];
@@ -1659,13 +1663,13 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         if ([req containsString:combinedparts]) {
             if ([entry[@"timeStamp"] doubleValue] == -2) {
                 NCNotificationRequest *argFix = arg1;
-                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", arg1.content.header, @"DND"];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", arg1.content.header, @"DND"];
                 [argFix.content setValue:newTitle forKey:@"_header"];
                 %orig(argFix);
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
             } else {
                 NCNotificationRequest *argFix = arg1;
-                NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, SNOOZED];
+                NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
                 [argFix.content setValue:newTitle forKey:@"_header"];
                 %orig(argFix);
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
@@ -1690,12 +1694,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
             NCNotificationRequest *argFix = arg1;
             /*if ([entry[@"timeStamp"] doubleValue] == -2) { //DND START
                 if (![argFix.content.header containsString:@"DND"]) {
-                    NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, @"DND"];
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, @"DND"];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
             } else {*/
                 if (![argFix.content.header containsString:SNOOZED]) {
-                    NSString *newTitle = [NSString stringWithFormat:@"%@ · %@", argFix.content.header, SNOOZED];
+                    NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
                     [argFix.content setValue:newTitle forKey:@"_header"];
                 }
             //}
@@ -1859,8 +1863,12 @@ static void loadPrefs() {
     tMINUTES = [tweakBundle localizedStringForKey:@"tMINUTES" value:@"" table:nil];
     ffMINUTES = [tweakBundle localizedStringForKey:@"ffMINUTES" value:@"" table:nil];
     oneHOUR = [tweakBundle localizedStringForKey:@"oneHOUR" value:@"" table:nil];
+    twoHOURS = [tweakBundle localizedStringForKey:@"twoHOURS" value:@"" table:nil];
+    threeHOURS = [tweakBundle localizedStringForKey:@"threeHOURS" value:@"" table:nil];
     fourHOURS = [tweakBundle localizedStringForKey:@"fourHOURS" value:@"" table:nil];
+    sixHOURS = [tweakBundle localizedStringForKey:@"sixHOURS" value:@"" table:nil];
     eightHOURS = [tweakBundle localizedStringForKey:@"eightHOURS" value:@"" table:nil];
+    twelveHOURS = [tweakBundle localizedStringForKey:@"twelveHOURS" value:@"" table:nil];
     sTIME = [tweakBundle localizedStringForKey:@"sTIME" value:@"" table:nil];
     SNOOZEU = [tweakBundle localizedStringForKey:@"SNOOZEU" value:@"" table:nil];
     SNOOZEF = [tweakBundle localizedStringForKey:@"SNOOZEF" value:@"" table:nil];
@@ -1876,13 +1884,22 @@ static void loadPrefs() {
 
     NSFileManager *manager = [NSFileManager defaultManager];
 
+    NSDate *date = [NSDate date];
+    NSDictionary *baseDictionary = @{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date};
+
+    checkAgain:
     if (![manager fileExistsAtPath:configPath]) {
         if(![manager fileExistsAtPath:configPath.stringByDeletingLastPathComponent isDirectory:nil]) {
             [manager createDirectoryAtPath:configPath.stringByDeletingLastPathComponent withIntermediateDirectories:YES attributes:attributes error:NULL];
         }
         [manager createFileAtPath:configPath contents:nil attributes:attributes];
-        NSDate *date = [NSDate date];
-        [@{@"entries":@[],@"snoozedCache":@[],@"firstTime":@"YES",@"EnabledForDND":@"NO",@"DNDStartTime":date} writeToFile:configPath atomically:YES];
+        [baseDictionary writeToFile:configPath atomically:YES];
+    } else {
+        config = [NSDictionary dictionaryWithContentsOfFile:configPath];
+        if (![[baseDictionary allKeys] isEqualToArray:[config allKeys]]) {
+            [manager removeItemAtPath:configPath error:nil];
+            goto checkAgain;
+        }
     }
     config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
     //isEnabledForDND = [config[@"EnabledForDND"] boolValue] ? YES : NO; //DND START
@@ -1891,7 +1908,7 @@ static void loadPrefs() {
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
     if (enabled && !dpkgInvalid) {
         %init(Selenium);
-        %init(AxonFix);
+        if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axonreborn.md5sums"]) %init(AxonFix);
         return;
     }
 

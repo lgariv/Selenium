@@ -1,11 +1,12 @@
 #import "Tweak.h"
 #import "AXNManager.h"
 
-BOOL dpkgInvalid = NO;
-BOOL initialized = NO;
-BOOL enabled;
-//BOOL enabledForDND; // DND START
-NSInteger segmentInterval;
+static BOOL dpkgInvalid = NO;
+static BOOL initialized = NO;
+static BOOL enabled;
+//static BOOL enabledForDND; // DND START
+static NSInteger segmentInterval;
+static BOOL deliverQuietlyWhileDND;
 
 NSDictionary *prefs = nil;
 
@@ -1831,12 +1832,14 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     %orig;
     [self updateCountForBundleIdentifier:[(NCNotificationRequest*)req sectionIdentifier]];
     [self.view refresh];
+    // updating app notification count every time a notification of the same bundle identifier is shown.
 }
 
 -(void)hideNotificationRequest:(id)req {
     %orig;
     [self updateCountForBundleIdentifier:[(NCNotificationRequest*)req sectionIdentifier]];
     [self.view refresh];
+    // updating app notification count every time a notification of the same bundle identifier is hidden.
 }
 %end
 %end
@@ -1846,6 +1849,7 @@ static void loadPrefs() {
     if ( [prefs objectForKey:@"TweakisEnabled"] ? [[prefs objectForKey:@"TweakisEnabled"] boolValue] : YES ) {
 		enabled = YES;
 		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
+        deliverQuietlyWhileDND = [[prefs objectForKey:@"deliverQuietlyWhileDND"] boolValue];
 	}
 }
 
@@ -1899,7 +1903,7 @@ static void loadPrefs() {
     if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/com.miwix.selenium.md5sums"];
     if (enabled && !dpkgInvalid) {
         %init(Selenium);
-        if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axonreborn.md5sums"]) %init(AxonFix);
+        if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axonreborn.md5sums"]) %init(AxonFix); // Initiate Axon compatibility fix if Axon Reborn is installed.
         return;
     }
 

@@ -28,7 +28,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Specific Time Interval</string>
+			<string>Specific Time Interval (in minutes)</string>
 		</dict>
 		<dict>
 			<key>PostNotification</key>
@@ -55,6 +55,26 @@
 				<string>10</string>
 				<string>15</string>
 			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Do Not Disturb</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.miwix.seleniumprefs/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.miwix.seleniumprefs</string>
+			<key>key</key>
+			<string>deliverQuietlyWhileDND</string>
+			<key>label</key>
+			<string>Deliver Quietly</string>
 		</dict>
 		<dict>
 			<key>cell</key>

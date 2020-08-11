@@ -1,0 +1,42 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>Benachrichtigung schlummern</string>
+	<key>SNOOZENS</key>
+	<string>Benachrichtigungen schlummern</string>
+	<key>SNOOZE</key>
+	<string>Schlummern</string>
+	<key>SNOOZED</key>
+	<string>Schlummernd</string>
+	<key>fMINUTES</key>
+	<string>Für 15 Minuten</string>
+	<key>tMINUTES</key>
+	<string>Für 30 Minuten</string>
+	<key>ffMINUTES</key>
+	<string>Für 45 Minuten</string>
+	<key>oneHOUR</key>
+	<string>Für 1 Stunde</string>
+	<key>twoHOURS</key>
+	<string>Für 2 Stunden</string>
+	<key>threeHOURS</key>
+	<string>Für 3 Stunden</string>
+	<key>fourHOURS</key>
+	<string>Für 4 Stunden</string>
+	<key>sixHOURS</key>
+	<string>Für 6 Stunden</string>
+	<key>eightHOURS</key>
+	<string>Für 8 Stunden</string>
+	<key>twelveHOURS</key>
+	<string>Für 12 Stunden</string>
+	<key>sTIME</key>
+	<string>Spezifische Zeit</string>
+	<key>SNOOZEU</key>
+	<string>Schlummern bis </string>
+	<key>SNOOZEF</key>
+	<string>Schlummern für </string>
+	<key>CANCEL</key>
+	<string>Abbrechen</string>
+	<key>TAPCHANGE</key>
+	<string>Tippen zum ändern</string>
+	<key>STEPPER</key>
+	<string>Schrittweise</string>
+</dict>

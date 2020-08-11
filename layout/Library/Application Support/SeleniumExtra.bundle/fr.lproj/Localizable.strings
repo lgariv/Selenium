@@ -1,0 +1,42 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>Snooze Notification</string>
+	<key>SNOOZENS</key>
+	<string>Snooze Notifications</string>
+	<key>SNOOZE</key>
+	<string>Snooze</string>
+	<key>SNOOZED</key>
+	<string>Snoozed</string>
+	<key>fMINUTES</key>
+	<string>Pendant 15 minutes</string>
+	<key>tMINUTES</key>
+	<string>Pendant 30 minutes</string>
+	<key>ffMINUTES</key>
+	<string>Pendant 45 minutes</string>
+	<key>oneHOUR</key>
+	<string>Pendant 1 heure</string>
+	<key>twoHOURS</key>
+	<string>Pendant 2 heures</string>
+	<key>threeHOURS</key>
+	<string>Pendant 3 heures</string>
+	<key>fourHOURS</key>
+	<string>Pendant 4 heures</string>
+	<key>sixHOURS</key>
+	<string>Pendant 6 heures</string>
+	<key>eightHOURS</key>
+	<string>Pendant 8 heures</string>
+	<key>twelveHOURS</key>
+	<string>Pendant 12 heures</string>
+	<key>sTIME</key>
+	<string>Jusqu'à une certaine heure</string>
+	<key>SNOOZEU</key>
+	<string>Snooze jusqu'à </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>SNOOZEF</key>
+	<string>Snooze pendant </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>CANCEL</key>
+	<string>Annuler</string>
+	<key>TAPCHANGE</key>
+	<string>Appuyez Pour Changer</string>
+	<key>STEPPER</key>
+	<string>Durée personnalisée</string>
+</dict>

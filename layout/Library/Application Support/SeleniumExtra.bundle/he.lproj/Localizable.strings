@@ -1,0 +1,42 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>דחה התראה</string>
+	<key>SNOOZENS</key>
+	<string>דחה התראות</string>
+	<key>SNOOZE</key>
+	<string>דחה</string>
+	<key>SNOOZED</key>
+	<string>נדחה</string>
+	<key>fMINUTES</key>
+	<string>15 דקות</string>
+	<key>tMINUTES</key>
+	<string>30 דקות</string>
+	<key>ffMINUTES</key>
+	<string>45 דקות</string>
+	<key>oneHOUR</key>
+	<string>שעה אחת</string>
+	<key>twoHOURS</key>
+	<string>שעתיים</string>
+	<key>threeHOURS</key>
+	<string>3 שעות</string>
+	<key>fourHOURS</key>
+	<string>4 שעות</string>
+	<key>sixHOURS</key>
+	<string>6 שעות</string>
+	<key>eightHOURS</key>
+	<string>8 שעות</string>
+	<key>twelveHOURS</key>
+	<string>12 שעות</string>
+	<key>sTIME</key>
+	<string>זמן ספציפי</string>
+	<key>SNOOZEF</key>
+	<string>דחה ל</string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>SNOOZEU</key>
+	<string>דחה עד ל</string>
+	<key>CANCEL</key>
+	<string>ביטול</string>
+	<key>TAPCHANGE</key>
+	<string>הקש כדי לשנות</string>
+	<key>STEPPER</key>
+	<string>סטפר</string>
+</dict>

@@ -6,7 +6,7 @@ static BOOL initialized = NO;
 static BOOL enabled;
 //static BOOL enabledForDND; // DND START
 static NSInteger segmentInterval;
-static BOOL deliverQuietlyWhileDND;
+static BOOL deliverQuietlyWhilePlaying;
 
 NSDictionary *prefs = nil;
 
@@ -135,9 +135,13 @@ static NSString *STEPPER;
 }
 %end
 
+@interface NCNotificationViewControllerView : UIView
+@end
+
 @interface NCNotificationViewController : UIViewController {
     NCNotificationRequest* _notificationRequest;
 }
+@property (getter=_notificationViewControllerView,nonatomic,readonly) NCNotificationViewControllerView * notificationViewControllerView; 
 @property (nonatomic,retain) NCNotificationRequest * notificationRequest;                                                                                                                                                    //@synthesize notificationRequest=_notificationRequest - In the implementation block
 @end
 
@@ -149,8 +153,9 @@ static NSString *STEPPER;
 @end 
 
 @interface NCNotificationListView : UIScrollView
-@property (assign,getter=isGrouped,nonatomic) BOOL grouped;                                                                          //@synthesize grouped=_grouped - In the implementation block
-@property (assign,readwrite) NCNotificationGroupList<NCNotificationListViewDataSource> *dataSource;                                                 //@synthesize dataSource=_dataSource - In the implementation block
+@property (assign,getter=isGrouped,nonatomic) BOOL grouped;
+@property (assign,readwrite) NCNotificationGroupList<NCNotificationListViewDataSource> *dataSource;
+@property(retain, nonatomic) NSMutableDictionary *visibleViews;
 @end
 
 @interface NCNotificationListCell : UIView {
@@ -163,7 +168,8 @@ static NSString *STEPPER;
 @interface NCNotificationListCellActionButtonsView : UIView
 @property (nonatomic,retain) UIStackView * buttonsStackView;
 @property (nonatomic) BOOL shouldPerformDefaultAction;
-- (void)swipedUp:(id)arg1;
++(id)_actionButtonDescriptionsForNotificationRequest:(id)arg1 sectionSettings:(id)arg2 cell:(id)arg3 ;
+- (void)swipedUp:(UIButton *)arg1;
 @end
 
 @interface NCNotificationListCellActionButton : UIControl
@@ -175,8 +181,8 @@ static NSString *STEPPER;
 @end
 
 NSString *bundleID;
-NCNotificationListCell *snoozedCell;
-NCNotificationRequest *argToDismiss;
+/*static*/ NCNotificationListCell *snoozedCell;
+/*static*/ NCNotificationRequest *argToDismiss;
 
 NCNotificationRequest *reqToBeSnoozed;
 
@@ -189,6 +195,8 @@ static NSDictionary *notifInfo;
 %hook NCNotificationListCellActionButtonsView
 -(void)layoutSubviews {
     %orig;
+    if ([self.superview.superview.superview isKindOfClass:[%c(NCNotificationListCell) class]] && self.superview.superview.superview != snoozedCell)
+    snoozedCell = self.superview.superview.superview;
 
     // Get the options StackView array
     NSArray<NCNotificationListCellActionButton *> *buttonsArray = self.buttonsStackView.arrangedSubviews;
@@ -200,23 +208,23 @@ static NSDictionary *notifInfo;
         buttonsArray[1].title = SNOOZE;
         [buttonsArray[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
         [buttonsArray[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
-        /*[iconView removeFromSuperview];
-        if (!iconView) {
-            iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,buttonsArray[1].frame.size.width,buttonsArray[1].frame.size.height)];
-            //iconView.bounds = CGRectMake(0,0,buttonsArray[1].bounds.size.width,buttonsArray[1].bounds.size.height);
-            iconView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            iconView.contentMode = UIViewContentModeScaleAspectFit;
-            iconView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/SeleniumPrefs.bundle/iconGreen.PNG"];
-            iconView.translatesAutoresizingMaskIntoConstraints = YES;
-        } else iconView.frame = CGRectMake(0,0,buttonsArray[1].frame.size.width,buttonsArray[1].frame.size.height);
-        [buttonsArray[1] insertSubview:iconView aboveSubview:buttonsArray[1].titleLabel];*/
     }
 }
 
-/*-(void)_configureActionButtonsForActionButtonDescriptions:(id)arg1 cell:(id)arg2 {
-    NSLog(@"[SELENIUM] arg1: %@ arg2: %@",[arg1 class],[arg2 class]);
+-(void)handlePan:(id)arg1 {
+    NSLog(@"[SELENIUM] arg1: %@",[arg1 class]);
     %orig;
-}*/
+}
+
+-(void)_layoutClippingView {
+    %orig;
+    //NSLog(@"[Selenium] _layoutClippingView");
+}
+
+-(void)_layoutButtonsStackView {
+    %orig;
+    //NSLog(@"[Selenium] _layoutButtonsStackView");
+}
 
 -(void)configureCellActionButtonsForNotificationRequest:(id)arg1 sectionSettings:(id)arg2 cell:(id)arg3 {
     argToDismiss = arg1;
@@ -224,51 +232,36 @@ static NSDictionary *notifInfo;
     snoozedCell = arg3;
     reqToBeSnoozed = snoozedCell.contentViewController.notificationRequest;
     NSLog(@"snoozedCell: %@", snoozedCell);
-    /*if (!newView) {
-        newView = [[UIView alloc] init];
-        [newView setBackgroundColor:[UIColor whiteColor]];
-    }
-    if (newButton) {
-        [newButton removeFromSuperview];
-    }
-    [newView setFrame:CGRectMake(0, 50, 375, 30)];
-    newButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [newButton setTitle:snoozedCell.contentViewController.notificationRequest.content.message forState:UIControlStateNormal];
-    [newButton setFrame:newView.bounds];
-    [newView addSubview:newButton];
-    [[[UIApplication sharedApplication] windows][0] addSubview:newView];*/
     %orig;
+    NSLog(@"[Selenium] self.superview: %@", self.superview);
 }
 
 %new
-- (void)swipedUp:(id)arg1 {
+- (void)swipedUp:(UIButton *)arg1 {
+    if ([self.superview.superview.superview isKindOfClass:[%c(NCNotificationListCell) class]] && self.superview.superview.superview != snoozedCell)
+    snoozedCell = self.superview.superview.superview;
+
     notifInfo = @{@"id": reqToBeSnoozed, @"cell": snoozedCell};
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
 }
 %end
 
-//static double minutesLeft;
 static double secondsLeft;
 
 static NSString *configPath = @"/var/mobile/Library/Selenium/manager.plist";
-//NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
-//static NSString *configPath = @"/Library/Application Support/Selenium/manager.plist";
 static NSMutableDictionary *config;
 
 static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove, BOOL dnd) {
-  //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"snoozedCache"] mutableCopy];
   bool add = YES;
   NSDictionary *remove = nil;
-  for (NSMutableDictionary /*__strong*/ *entry in entries) {
-    //entry = [entry mutableCopy];
+  for (NSMutableDictionary *entry in entries) {
     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@";"] mutableCopy];
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
     if ([req containsString:combinedparts]) {
-        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest*)request timestamp]];
-        #pragma mark storeSnoozed crash
+        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[request timestamp]];
         entry[@"timeToRemove"] = removeDate;
         remove = entry;
         add = NO;
@@ -280,18 +273,16 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove, BOOL
   }
   if (add) {
     NSDictionary *info;
-    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[(NCNotificationRequest*)request timestamp]];
+    NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[request timestamp]];
     info = @{@"id": req, @"timeToRemove": removeDate, @"timeStamp": @(dnd ? -2 : 0)};
     [entries addObject:info];
   }
   [config setObject:entries forKey:@"snoozedCache"];
   [config writeToFile:configPath atomically:YES];
   config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-  //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
-  //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
   NSString *req = [NSString stringWithFormat:@"%@", request];
   NSMutableArray *entries = [config[@"entries"] mutableCopy];
   bool add = YES;
@@ -311,7 +302,6 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
         } else if (interval == 0) {
             remove = entry;
         } else {
-            #pragma mark storeSnoozed crash
             entry[@"timeStamp"] = @([[NSDate date] timeIntervalSince1970] + interval);
         }
         add = NO;
@@ -338,7 +328,6 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
   [config setObject:entries forKey:@"entries"];
   [config writeToFile:configPath atomically:YES];
   config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
-  //[[NSUserDefaults standardUserDefaults] setObject:config forKey:@"dictionaryKey"];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -722,7 +711,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             stackView.layoutMarginsRelativeArrangement = YES;
             stackView.spacing = 15;
 
-            UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/PreferenceLoader/Preferences/SeleniumPrefs.plist"];
+            UIImage *iconImage = [UIImage imageWithContentsOfFile:@"/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"];
             UIImageView *iconImageView = [[UIImageView alloc] initWithImage:iconImage];
             [iconImageView setFrame:CGRectMake(0, 0, 100.0f, 100.0f)];
             [iconImageView setTranslatesAutoresizingMaskIntoConstraints:YES];
@@ -813,7 +802,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     UIAlertController *alert;
 
     BOOL grouped;
-    if (cellListView.grouped) {
+    if (cellListView.grouped && [cellListView.visibleViews count] > 1) {
         grouped = YES;
         alert = [UIAlertController alertControllerWithTitle:SNOOZENS message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     } else {
@@ -852,44 +841,29 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
         
         [alertController setTitle:SNOOZEF];
         //UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        UIDatePicker *picker = [[UIDatePicker alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
+        ///**/UIDatePicker *picker = [[UIDatePicker alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x, 80, alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
         //[picker setDatePickerMode:UIDatePickerModeDateAndTime];
         //[picker setMinuteInterval:15];
         //[picker setMinimumDate:[NSDate dateWithTimeInterval:900 sinceDate:[NSDate date]]];
         //[picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timeStamp]];
-        picker.hidden = YES;
-        [alertController.view addSubview:picker];
+        ///**/picker.hidden = YES;
+        ///**/[alertController.view addSubview:picker];
 
-        SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
-        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
-        [button setBackgroundColor:[UIColor systemBlueColor]];
-        [button setTitle:SNOOZE forState:UIControlStateNormal];
-        button.titleLabel.font = [UIFont systemFontOfSize:19];
-        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        button.request = requestToProcess;
-        button.controllerToDismiss = alertController;
-        button.cell = cellToCapture;
-        button.grouped = grouped;
-        [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
-        [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
-        [button addTarget:self action:@selector(stepperButtonUp:) forControlEvents:UIControlEventTouchUpInside];
-        button.layer.cornerRadius = 10.5;
-        [alertController.view addSubview:button];
-
-        UIImageView *myImage = [[UIImageView alloc] init];
-        myImage.image = [self imageWithView:cellToCapture];
-        double widthInPoints = myImage.image.size.width;
-        double heightInPoints = myImage.image.size.height;
-        [myImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
-        myImage.contentMode = UIViewContentModeScaleAspectFit;
+        UIImageView *cellImage = [[UIImageView alloc] init];
+        cellImage.image = [self imageWithView:cellToCapture];
+        double widthInPoints = cellImage.image.size.width;
+        double heightInPoints = cellImage.image.size.height;
+        [cellImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+        cellImage.contentMode = UIViewContentModeScaleAspectFit;
         
         SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
-        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
 
         if (grouped) {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
+        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
+            [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
         } else {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
+        button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
+            [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
         }
 
         [button2 setBackgroundColor:[UIColor systemGrayColor]];
@@ -897,10 +871,8 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
         button2.layer.cornerRadius = 12.5;
 
         [alertController.view addSubview:button2];
-        [alertController.view addSubview:myImage];
-        myImage.center = button2.center;
-
-        picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
+        [alertController.view addSubview:cellImage];
+        cellImage.center = button2.center;
 
         #pragma mark stepper "cell"
         UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+60+(heightInPoints+10), alertController.view.frame.size.width - margin * 4.0F - 20, 50)];
@@ -908,7 +880,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
         [stepperFrame setAlpha:0.1];
         stepperFrame.layer.cornerRadius = 12.5;
         UIHoursStepper *stepper = [[UIHoursStepper alloc] init];
-        stepper.minimumValue = 1; //15, 30, 45, 1, 2, 3, 4, 6, 8, 12
+        stepper.minimumValue = 1; //15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 8h, 12h
         stepper.maximumValue = 10;
         [stepper addTarget:self action:@selector(valueChanged:) forControlEvents:UIControlEventValueChanged];
         [alertController.view addSubview:stepperFrame];
@@ -951,8 +923,6 @@ stackView.alignment = UIStackViewAlignmentCenter;
         NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedForUntilLabel];
         stepperUntilLabel.attributedText = attributedSnoozedForUntilLabel;
 
-        button.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
-        button.stepper = stepper;
 UIStackView *labelStackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
 labelStackView.axis = UILayoutConstraintAxisVertical;
 labelStackView.center = stepperFrame.center;
@@ -966,7 +936,25 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [stackView addArrangedSubview:stepper];
         [alertController.view addSubview:stackView];
 
-        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+20) + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (/*picker*/90 - 2) + 50, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
+        [button setBackgroundColor:[UIColor systemBlueColor]];
+        [button setTitle:SNOOZE forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:19];
+        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        button.request = requestToProcess;
+        button.controllerToDismiss = alertController;
+        button.cell = cellToCapture;
+        button.grouped = grouped;
+        button.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
+        button.stepper = stepper;
+        [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
+        [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
+        [button addTarget:self action:@selector(stepperButtonUp:) forControlEvents:UIControlEventTouchUpInside];
+        button.layer.cornerRadius = 10.5;
+        [alertController.view addSubview:button];
+
+        button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + /*picker*/70 + stepperFrame.frame.size.height + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
         UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
         popoverController.sourceView = alertController.view;
         popoverController.sourceRect = [alertController.view bounds];
@@ -1031,20 +1019,20 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         button.layer.cornerRadius = 10.5;
         [alertController.view addSubview:button];
 
-        UIImageView *myImage = [[UIImageView alloc] init];
-        myImage.image = [self imageWithView:cellToCapture];
-        double widthInPoints = myImage.image.size.width;
-        double heightInPoints = myImage.image.size.height;
-        [myImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
-        myImage.contentMode = UIViewContentModeScaleAspectFit;
+        UIImageView *cellImage = [[UIImageView alloc] init];
+        cellImage.image = [self imageWithView:cellToCapture];
+        double widthInPoints = cellImage.image.size.width;
+        double heightInPoints = cellImage.image.size.height;
+        [cellImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+        cellImage.contentMode = UIViewContentModeScaleAspectFit;
         
         SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
         button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints+10);
 
         if (grouped) {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
+            [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
         } else {
-            [myImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
+            [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
         }
 
         [button2 setBackgroundColor:[UIColor systemGrayColor]];
@@ -1052,8 +1040,8 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         button2.layer.cornerRadius = 12.5;
 
         [alertController.view addSubview:button2];
-        [alertController.view addSubview:myImage];
-        myImage.center = button2.center;
+        [alertController.view addSubview:cellImage];
+        cellImage.center = button2.center;
 
         picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+30) + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
@@ -1164,25 +1152,28 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     NCNotificationListView *superView = (NCNotificationListView *)viewB.superview;
     UIView *view;
 
-    if (superView.grouped) {
+    if (superView.grouped && [superView.visibleViews count] > 1) {
         view = superView;
     } else {
-        view = viewB;
+        view = [(NCNotificationListCell*)viewB contentViewController].notificationViewControllerView;
     }
 
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:view.bounds.size];
-	static UIImage *imageRender;/* = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+	UIImage *imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
         [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
-    }];*/
+    }];
+    static UIImage *cacheImageRender;
 
     if (view.alpha == 0) {
+        NSLog(@"[Selenlium] alpha == 0");
 	    renderer = nil;
-        return imageRender;
+        return cacheImageRender;
     } else {
-        imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+        /*imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
             [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
-        }];
+        }];*/
 	    renderer = nil;
+        cacheImageRender = imageRender;
         return imageRender;
     }
 
@@ -1844,12 +1835,47 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %end
 %end
 
+%group deliverQuietly
+@interface SBMediaController : NSObject
++(id)sharedInstance;
+-(BOOL)isPlaying;
+@end
+
+%hook SBNCScreenController // Controls whether the screen should wake up for a notification when it is arriving.
+-(void)turnOnScreenForNotificationRequest:(id)arg1 {
+	if ([[%c(SBMediaController) sharedInstance] isPlaying]) {
+		return;
+	}
+	%orig(arg1);
+}
+%end
+
+%hook SBNCSoundController // Controls whether a sound will be played (and what sound) for a notification when it is arriving.
+-(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
+	if ([[%c(SBMediaController) sharedInstance] isPlaying]) {
+		return;
+	}
+	%orig(arg1,arg2);
+}
+%end
+
+%hook SBNotificationBannerDestination // Displays a banner for a notification when it is arriving.
+-(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(id)arg3 {
+	if ([[%c(SBMediaController) sharedInstance] isPlaying]) {
+		return;
+	}
+	%orig(arg1,arg2,arg3);
+}
+%end
+%end
+
 static void loadPrefs() {
     NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.miwix.seleniumprefs.plist"];
     if ( [prefs objectForKey:@"TweakisEnabled"] ? [[prefs objectForKey:@"TweakisEnabled"] boolValue] : YES ) {
 		enabled = YES;
 		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
-        deliverQuietlyWhileDND = [[prefs objectForKey:@"deliverQuietlyWhileDND"] boolValue];
+        deliverQuietlyWhilePlaying = [[prefs objectForKey:@"deliverQuietlyWhilePlaying"] boolValue];
+        if (deliverQuietlyWhilePlaying) %init(deliverQuietly);
 	}
 }
 

@@ -60,7 +60,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Do Not Disturb</string>
+			<string>while playing</string>
+			<key>footerText</key>
+			<string>Deliver notifications quietly while playing music or watching a video. No banners, no sounds, and without waking up the screen.</string>
 		</dict>
 		<dict>
 			<key>PostNotification</key>
@@ -72,9 +74,13 @@
 			<key>defaults</key>
 			<string>com.miwix.seleniumprefs</string>
 			<key>key</key>
-			<string>deliverQuietlyWhileDND</string>
+			<string>deliverQuietlyWhilePlaying</string>
 			<key>label</key>
 			<string>Deliver Quietly</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
 		</dict>
 		<dict>
 			<key>cell</key>

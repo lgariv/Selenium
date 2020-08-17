@@ -1,12 +1,22 @@
 #import "Tweak.h"
 #import "AXNManager.h"
 
+// Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
+// [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.] [Actually now that I think about it 2 months later, it could potentially be used to make notifications snoozing persistent through reboots even when in non-jailbroken modes (because 1st party apps notifications use this type of timer, such as alarms and reminders), but that would require a completly different implementation of the actual notification snoozing part. I tried to do this before and failed, and there's no much info on how notifications (BBBulletin, BBserver etc.) actually work. for this benfit alone, this would be way too much effort for me.]
+@interface PCSimpleTimer : NSObject {
+	NSRunLoop* _timerRunLoop;
+}
+-(id)userInfo;
+-(void)scheduleInRunLoop:(id)arg1 ;
+-(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
+@end
+
 static BOOL dpkgInvalid = NO;
-static BOOL initialized = NO;
 static BOOL enabled;
 //static BOOL enabledForDND; // DND START
 static NSInteger segmentInterval;
 static BOOL deliverQuietlyWhilePlaying;
+PCSimpleTimer *lastTimer;
 
 NSDictionary *prefs = nil;
 
@@ -35,27 +45,6 @@ static NSString *STEPPER;
 
 %group Selenium
 
-#pragma mark Legibility color
-
-%hook SBFLockScreenDateView
-
--(id)initWithFrame:(CGRect)arg1 {
-    %orig;
-    if (self.legibilitySettings && self.legibilitySettings.primaryColor) {
-        [AXNManager sharedInstance].fallbackColor = [self.legibilitySettings.primaryColor copy];
-    }
-    return self;
-}
-
--(void)setLegibilitySettings:(_UILegibilitySettings *)arg1 {
-    %orig;
-    if (self.legibilitySettings && self.legibilitySettings.primaryColor) {
-        [AXNManager sharedInstance].fallbackColor = [self.legibilitySettings.primaryColor copy];
-    }
-}
-
-%end
-
 #pragma mark Store dispatcher for future use
 
 %hook SBNCNotificationDispatcher
@@ -75,7 +64,6 @@ static NSString *STEPPER;
 
 #pragma mark Notification management
 
-// iOS13 Support
 @interface NCNotificationMasterList
 @property(retain, nonatomic) NSMutableArray *notificationSections;
 @end
@@ -192,6 +180,17 @@ UIImageView *iconView;
 
 static NSDictionary *notifInfo;
 
+@interface SBFUserAuthenticationController : NSObject
+-(void)_setAuthState:(long long)arg1 ;
+-(void)_updateAuthenticationStateImmediately:(BOOL)arg1 forPublicReason:(id)arg2 ;
+-(BOOL)isAuthenticated;
+-(void)_updateSecureModeIfNecessaryForNewAuthState;
+@end
+
+@interface SBLockScreenManager : NSObject
+@property (setter=_setUserAuthController:,getter=_userAuthController,nonatomic,retain) SBFUserAuthenticationController * userAuthController;
+@end
+
 %hook NCNotificationListCellActionButtonsView
 -(void)layoutSubviews {
     %orig;
@@ -209,21 +208,6 @@ static NSDictionary *notifInfo;
         [buttonsArray[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
         [buttonsArray[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
     }
-}
-
--(void)handlePan:(id)arg1 {
-    NSLog(@"[SELENIUM] arg1: %@",[arg1 class]);
-    %orig;
-}
-
--(void)_layoutClippingView {
-    %orig;
-    //NSLog(@"[Selenium] _layoutClippingView");
-}
-
--(void)_layoutButtonsStackView {
-    %orig;
-    //NSLog(@"[Selenium] _layoutButtonsStackView");
 }
 
 -(void)configureCellActionButtonsForNotificationRequest:(id)arg1 sectionSettings:(id)arg2 cell:(id)arg3 {
@@ -261,8 +245,10 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove, BOOL
     [parts removeObject:parts[0]];
     NSString *combinedparts = [parts componentsJoinedByString:@";"];
     if ([req containsString:combinedparts]) {
-        NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[request timestamp]];
-        entry[@"timeToRemove"] = removeDate;
+        if (!shouldRemove) {
+            NSDate *removeDate = [[NSDate alloc] initWithTimeInterval:604800 sinceDate:[request timestamp]];
+            entry[@"timeToRemove"] = removeDate;
+        }
         remove = entry;
         add = NO;
         //break;
@@ -279,7 +265,7 @@ static void storeSnoozed(NCNotificationRequest *request, BOOL shouldRemove, BOOL
   }
   [config setObject:entries forKey:@"snoozedCache"];
   [config writeToFile:configPath atomically:YES];
-  config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+  //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
 }
 
 static void processEntry(NCNotificationRequest *request, double interval, NSDate *inputDate) {
@@ -327,7 +313,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
   }
   [config setObject:entries forKey:@"entries"];
   [config writeToFile:configPath atomically:YES];
-  config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+  //config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
 }
 
 @protocol NCNotificationManagementControllerSettingsDelegate <NSObject>
@@ -412,16 +398,6 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @interface SpringBoard ()
 - (UIImage *) imageWithView:(UIView *)view;
 -(NSDate *)getStepperValue:(NSNumber *)number;
-@end
-
-// Tried to replace NSTimer with PCPersistentTimer for better reliability, but that made it go to safe mode once in a while. More testing needed. Also, PCPersistentTimer is working accross reboots (even if the device is not jailbroken - it will fire.), so also need to disable that to prevent possible freezes (I assume).
-// [Interesting feature: it has the ability to wake the device and perform the action if it is powered off at the time it is supposed to execute. has nothing to do with this tweak (that I can think of) but might come in handy in the future.] [Actually now that I think about it 2 months later, it could potentially be used to make notifications snoozing persistent through reboots even when in non-jailbroken modes (because 1st party apps notifications use this type of timer, such as alarms and reminders), but that would require a completly different implementation of the actual notification snoozing part. I tried to do this before and failed, and there's no much info on how notifications (BBBulletin, BBserver etc.) actually work. for this benfit alone, this would be way too much effort for me.]
-@interface PCSimpleTimer : NSObject {
-	NSRunLoop* _timerRunLoop;
-}
--(id)userInfo;
--(void)scheduleInRunLoop:(id)arg1 ;
--(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
 @end
 
 #pragma mark DND start
@@ -793,6 +769,9 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 
 %new
 - (void)showMuteMenu:(NSNotification *)notification {
+    if (![[[%c(SBLockScreenManager) sharedInstance] _userAuthController] isAuthenticated]) {
+        [[[%c(SBLockScreenManager) sharedInstance] _userAuthController] _setAuthState:3]; // Allowing the menu to show even if the device did not authenticate, by setting it to a specific state manually.
+    }
     NCNotificationRequest *requestToProcess = notification.userInfo[@"id"];
     NCNotificationListCell *cellToCapture = notification.userInfo[@"cell"];
     NCNotificationListView *cellListView = (NCNotificationListView *)cellToCapture.superview;
@@ -1424,12 +1403,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
             processEntry(request, -1, value);
         }
         NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:value
+        lastTimer = [[PCSimpleTimer alloc] initWithFireDate:value
                             serviceIdentifier:@"com.miwix.selenium.service"
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+        [lastTimer scheduleInRunLoop:[NSRunLoop mainRunLoop]];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
@@ -1438,12 +1417,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         }
         #pragma mark PCPersistentTimer setup
         NSDictionary* userInfo = @{@"request" : senderFix.request, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:value
+        lastTimer = [[PCSimpleTimer alloc] initWithFireDate:value
                             serviceIdentifier:@"com.miwix.selenium.service"
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+        [lastTimer scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
         processEntry(senderFix.request, -1, value);
     }
@@ -1570,12 +1549,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
             processEntry(request, -1, senderFix.pickerDate);
         }
         NSDictionary* userInfo = @{@"requests" : reqsArray, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
+        lastTimer = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
                             serviceIdentifier:@"com.miwix.selenium.service"
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+        [lastTimer scheduleInRunLoop:[NSRunLoop mainRunLoop]];
     } else {
         [[AXNManager sharedInstance] hideNotificationRequest:senderFix.request];
         if (![senderFix.request.content.header containsString:SNOOZED]) {
@@ -1584,12 +1563,12 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         }
         #pragma mark PCPersistentTimer setup
         NSDictionary* userInfo = @{@"request" : senderFix.request, @"grouped" : [NSNumber numberWithBool:senderFix.grouped]};
-        PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
+        lastTimer = [[PCSimpleTimer alloc] initWithFireDate:senderFix.pickerDate
                             serviceIdentifier:@"com.miwix.selenium.service"
                             target:self
                             selector:@selector(timerOperations:)
                             userInfo:userInfo];
-        [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+        [lastTimer scheduleInRunLoop:[NSRunLoop mainRunLoop]];
 
         processEntry(senderFix.request, -1, senderFix.pickerDate);
     }
@@ -1632,6 +1611,15 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end*/ //DND START
 
+%hook SBLockScreenManager
+-(void)setUIUnlocking:(BOOL)arg1 {%orig;}
+-(void)setPasscodeVisible:(BOOL)arg1 animated:(BOOL)arg2 {%orig;}
+-(BOOL)_setPasscodeVisible:(BOOL)arg1 animated:(BOOL)arg2 {
+    NSLog(@"[SeleniumTest] arg1: %@ arg2: %@",[NSNumber numberWithBool:arg1],[NSNumber numberWithBool:arg2]);
+    return %orig;
+}
+%end
+
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
     /*if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
@@ -1650,13 +1638,13 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         [parts removeObject:parts[0]];
         NSString *combinedparts = [parts componentsJoinedByString:@";"];
         if ([req containsString:combinedparts]) {
-            if ([entry[@"timeStamp"] doubleValue] == -2) {
+            /*if ([entry[@"timeStamp"] doubleValue] == -2) {
                 NCNotificationRequest *argFix = arg1;
                 NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", arg1.content.header, @"DND"];
                 [argFix.content setValue:newTitle forKey:@"_header"];
                 %orig(argFix);
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
-            } else {
+            } else {*/ // DND START
                 NCNotificationRequest *argFix = arg1;
                 NSString *newTitle = [NSString stringWithFormat:@"%@ • %@", argFix.content.header, SNOOZED];
                 [argFix.content setValue:newTitle forKey:@"_header"];
@@ -1664,13 +1652,13 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
                 [[AXNManager sharedInstance] hideNotificationRequest:argFix];
                 secondsLeft = [entry[@"timeStamp"] doubleValue] - [[NSDate date] timeIntervalSince1970] + 1;
                 NSDictionary* userInfo = @{@"request" : argFix};
-                PCSimpleTimer *timerShow = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
+                lastTimer = [[PCSimpleTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:secondsLeft]
                                     serviceIdentifier:@"com.miwix.selenium.service"
                                     target:self
                                     selector:@selector(timerOperations:)
                                     userInfo:userInfo];
-                [timerShow scheduleInRunLoop:[NSRunLoop mainRunLoop]];
-            }
+                [lastTimer scheduleInRunLoop:[NSRunLoop mainRunLoop]];
+            //}
             return;
         }
     }

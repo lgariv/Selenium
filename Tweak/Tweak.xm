@@ -182,9 +182,7 @@ static NSDictionary *notifInfo;
 
 @interface SBFUserAuthenticationController : NSObject
 -(void)_setAuthState:(long long)arg1 ;
--(void)_updateAuthenticationStateImmediately:(BOOL)arg1 forPublicReason:(id)arg2 ;
 -(BOOL)isAuthenticated;
--(void)_updateSecureModeIfNecessaryForNewAuthState;
 @end
 
 @interface SBLockScreenManager : NSObject
@@ -222,6 +220,10 @@ static NSDictionary *notifInfo;
 
 %new
 - (void)swipedUp:(UIButton *)arg1 {
+    if (![[[%c(SBLockScreenManager) sharedInstance] _userAuthController] isAuthenticated]) {
+        [[[%c(SBLockScreenManager) sharedInstance] _userAuthController] _setAuthState:3]; // Allowing the menu to show even if the device did not authenticate, by setting it to a specific state manually.
+    }
+
     if ([self.superview.superview.superview isKindOfClass:[%c(NCNotificationListCell) class]] && self.superview.superview.superview != snoozedCell)
     snoozedCell = self.superview.superview.superview;
 
@@ -769,9 +771,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 
 %new
 - (void)showMuteMenu:(NSNotification *)notification {
-    if (![[[%c(SBLockScreenManager) sharedInstance] _userAuthController] isAuthenticated]) {
-        [[[%c(SBLockScreenManager) sharedInstance] _userAuthController] _setAuthState:3]; // Allowing the menu to show even if the device did not authenticate, by setting it to a specific state manually.
-    }
     NCNotificationRequest *requestToProcess = notification.userInfo[@"id"];
     NCNotificationListCell *cellToCapture = notification.userInfo[@"cell"];
     NCNotificationListView *cellListView = (NCNotificationListView *)cellToCapture.superview;

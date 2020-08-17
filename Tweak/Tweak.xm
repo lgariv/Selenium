@@ -1024,10 +1024,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
         button.frame = CGRectMake(10 + alertController.view.bounds.origin.x, alertController.view.bounds.origin.y + (picker.frame.size.height+30) + button2.frame.size.height, alertController.view.frame.size.width - margin * 4.0F - 20, 50);
 
-        UIViewController *test = [[UIViewController alloc] init];
-        [[test view] setBackgroundColor:[UIColor whiteColor]];
-        [test setModalPresentationStyle:UIModalPresentationPopover];
-
         UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
         popoverController.sourceView = alertController.view;
         popoverController.sourceRect = [alertController.view bounds];

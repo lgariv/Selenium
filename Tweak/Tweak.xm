@@ -1342,14 +1342,11 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
                           NSForegroundColorAttributeName:[UIColor systemBlueColor],
                           NSFontAttributeName:boldFont
                           };
-        NSMutableArray *parts = [SNOOZEF componentsSeparatedByString:@" "];
-        [parts removeObject:parts[0]];
-        NSString *UNTIL = [parts componentsJoinedByString:@" "];
-        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] attributes:attribsSnoozedLabel];
+        NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@",[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] attributes:attribsSnoozedLabel];
         pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
         pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
         pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
-        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+        CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@",[(NSArray<UILabel*>*)senderFix.stepper.stepperLabel.arrangedSubviews firstObject].text] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
         pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
 
         UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];

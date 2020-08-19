@@ -45,6 +45,8 @@
 -(void)revealNotificationHistory:(BOOL)revealed;
 -(id)allNotificationRequests;
 
+-(id)coalescedNotificationForRequest:(id)req ;
+
 -(void)invalidateCountCache;
 -(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier;
 -(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier;

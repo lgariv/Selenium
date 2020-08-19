@@ -9,12 +9,14 @@
 -(id)userInfo;
 -(void)scheduleInRunLoop:(id)arg1 ;
 -(id)initWithFireDate:(id)arg1 serviceIdentifier:(id)arg2 target:(id)arg3 selector:(SEL)arg4 userInfo:(id)arg5 ;
+- (void)invalidate;
 @end
 
 static BOOL dpkgInvalid = NO;
 static BOOL enabled;
 //static BOOL enabledForDND; // DND START
 static NSInteger segmentInterval;
+static NSInteger chosenButton;
 static BOOL deliverQuietlyWhilePlaying;
 PCSimpleTimer *lastTimer;
 
@@ -202,9 +204,9 @@ static NSDictionary *notifInfo;
     // Less than 3 means the left option pannel is opened or the right one is already processed
     if (buttonsArray.count == 3) {
         // Replace the View option 
-        buttonsArray[1].title = SNOOZE;
-        [buttonsArray[1] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
-        [buttonsArray[1] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
+        buttonsArray[chosenButton].title = SNOOZE;
+        [buttonsArray[chosenButton] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
+        [buttonsArray[chosenButton] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
     }
 }
 
@@ -646,7 +648,7 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     %orig;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showDonateController:) name:@"com.miwix.selenium.donate" object:nil];
 
-    config = [NSMutableDictionary dictionaryWithContentsOfFile:configPath];
+    config = [[NSMutableDictionary dictionaryWithContentsOfFile:configPath] mutableCopy];
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
@@ -1129,42 +1131,27 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     if (superView.grouped && [superView.visibleViews count] > 1) {
         view = superView;
     } else {
-        view = [(NCNotificationListCell*)viewB contentViewController].notificationViewControllerView;
+        //view = [(NCNotificationListCell*)viewB contentViewController].notificationViewControllerView;
+        view = viewB;
     }
 
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:view.bounds.size];
-	UIImage *imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
-        [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
-    }];
-    static UIImage *cacheImageRender;
+	static UIImage *imageRender;/* = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+        [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
+    }];*/
 
     if (view.alpha == 0) {
-        NSLog(@"[Selenlium] alpha == 0");
 	    renderer = nil;
-        return cacheImageRender;
+        return imageRender;
     } else {
-        /*imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
-            [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:NO];
-        }];*/
+        imageRender = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+            [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
+        }];
 	    renderer = nil;
-        cacheImageRender = imageRender;
         return imageRender;
     }
 
 	renderer = nil;
-    /*if (view.alpha != 1.0f) {
-        NSCoder *imageBoundsData = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageBounds"];
-        CGRect imageBounds = [imageBoundsData decodeCGRectForKey:@"cellRect"];
-        static UIImage *imageFromDefaults = [UIImage imageWithData:[[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageData"]];
-        imageRender = [UIImage imageWithCGImage:CGImageCreateWithImageInRect([UIImage imageWithData:imageFromDefaults.CGImage, imageBounds) scale:imageFromDefaults.CGImage.scale orientation:imageFromDefaults.CGImage.imageOrientation];
-        //imageRender = [UIImage imageWithData:[[NSUserDefaults standardUserDefaults] objectForKey:@"lastCellImageData"]];
-    } else {
-        NSData *imageData = UIImagePNGRepresentation(imageRender);
-        [[NSUserDefaults standardUserDefaults] setObject:imageData forKey:@"lastCellImageData"];
-        NSCoder *imageBoundsData;
-        [imageBoundsData encodeCGRect:view.bounds forKey:@"cellRect"];
-        [[NSUserDefaults standardUserDefaults] setObject:imageBoundsData forKey:@"lastCellImageBounds"];
-    }*/
     return imageRender;
 }
 
@@ -1254,6 +1241,19 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %new
 -(void)tappedToChange:(UIButton *)sender {
+    NSDictionary* userInfo = [lastTimer userInfo];
+    if (userInfo[@"grouped"]) {
+        for (NCNotificationRequest *request in userInfo[@"requests"]) {
+            processEntry(request, 0, nil);
+        }
+        [[AXNManager sharedInstance] showNotificationRequests:userInfo[@"requests"]];
+    } else {
+        NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
+        processEntry(request, 0, nil);
+        [[AXNManager sharedInstance] showNotificationRequest:request];
+    }
+    [lastTimer invalidate];
+    lastTimer = nil;
     [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
 }
 
@@ -1606,15 +1606,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 %end*/ //DND START
 
-%hook SBLockScreenManager
--(void)setUIUnlocking:(BOOL)arg1 {%orig;}
--(void)setPasscodeVisible:(BOOL)arg1 animated:(BOOL)arg2 {%orig;}
--(BOOL)_setPasscodeVisible:(BOOL)arg1 animated:(BOOL)arg2 {
-    NSLog(@"[SeleniumTest] arg1: %@ arg2: %@",[NSNumber numberWithBool:arg1],[NSNumber numberWithBool:arg2]);
-    return %orig;
-}
-%end
-
 %hook CSNotificationDispatcher
 - (void)postNotificationRequest:(NCNotificationRequest *)arg1 {
     /*if (isEnabledForDND && isDNDEnabled && [arg1.timestamp compare:config[@"DNDStartTime"]] == NSOrderedDescending && ![[arg1.content.header lowercaseString] isEqualToString:@"do not disturb"]) {
@@ -1770,23 +1761,96 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 
 %group AxonFix // Trying to fix Axon compatibility issues
 %hook AXNManager
--(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier {
+/*-(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier {
+    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+    NSInteger snoozedCount = 0;
+    for (id entry in allNotifs) {
+        NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
+        NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
+        NSString *snoozedBundleID = (NSString*)parts[0];
+        if ([bundleIdentifier isEqualToString:snoozedBundleID]) snoozedCount++;
+    }
+
+    NSArray *requests = [[AXNManager sharedInstance] requestsForBundleIdentifier:bundleIdentifier];
+    NSInteger count = [requests count];
+    if (count == 0) {
+        [AXNManager sharedInstance].countCache[bundleIdentifier] = @(0);
+        return;
+    }
+
+    if ([[AXNManager sharedInstance].dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
+        count = 0;
+        NSMutableArray *coalescedNotifications = [NSMutableArray new];
+        for (NCNotificationRequest *req in requests) {
+            NCCoalescedNotification *coalesced = [[AXNManager sharedInstance] coalescedNotificationForRequest:req];
+            if (!coalesced) {
+                count++;
+                continue;
+            }
+
+            if (![coalescedNotifications containsObject:coalesced]) {
+                count += [coalesced.notificationRequests count];
+                [coalescedNotifications addObject:coalesced];
+            }
+        }
+    }
+
+    //NSLog(@"[COUNTCOUNT] count: %zd snoozedCount: %zd",count,snoozedCount);
+    [AXNManager sharedInstance].countCache[bundleIdentifier] = @(count);
+}*/
+
+-(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier {
+    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+    NSInteger snoozedCount = 0;
+    for (id entry in allNotifs) {
+        NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
+        NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
+        NSString *snoozedBundleID = (NSString*)parts[0];
+        if ([bundleIdentifier isEqualToString:snoozedBundleID]) snoozedCount++;
+    }
+
+    NSArray *requests = [self requestsForBundleIdentifier:bundleIdentifier];
+    NSInteger count = [requests count];
+    if (count == 0) {
+        self.countCache[bundleIdentifier] = @(0);
+        return;
+    }
+
+    if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
+        count = 0;
+        NSMutableArray *coalescedNotifications = [NSMutableArray new];
+        for (NCNotificationRequest *req in requests) {
+            NCCoalescedNotification *coalesced = [self coalescedNotificationForRequest:req];
+            if (!coalesced) {
+                count++;
+                continue;
+            }
+
+            if (![coalescedNotifications containsObject:coalesced]) {
+                count += [coalesced.notificationRequests count];
+                [coalescedNotifications addObject:coalesced];
+            }
+        }
+    }
+
+    self.countCache[bundleIdentifier] = @(count-snoozedCount);
+}
+
+/*-(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier {
     NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
     unsigned int count = 0;
     for (id entry in allNotifs) {
         NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
         NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
         NSString *snoozedBundleID = (NSString*)parts[0];
-        NSLog(@"[AXNCOUNT] bundleIdentifier: %@ snoozedBundleID: %@",bundleIdentifier,snoozedBundleID);
         if ([bundleIdentifier isEqualToString:snoozedBundleID]) count++;
     }
 
-    NSLog(@"[AXNCOUNT] bundleID: %@", bundleIdentifier);
     if (%orig(bundleIdentifier)-count < 0)
     return 0;
     else
     return %orig(bundleIdentifier)-count;
-}
+}*/
 
 -(void)showNotificationRequest:(id)req {
     NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
@@ -1811,6 +1875,49 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     [self updateCountForBundleIdentifier:[(NCNotificationRequest*)req sectionIdentifier]];
     [self.view refresh];
     // updating app notification count every time a notification of the same bundle identifier is hidden.
+}
+
+-(void)clearAll:(NSString *)bundleIdentifier {
+    NSMutableArray *notificationsToClear;
+    NSMutableArray *snoozingNotifications;
+    if (self.notificationRequests[bundleIdentifier]) {
+        for (NCNotificationRequest *request in self.notificationRequests[bundleIdentifier]) {
+            NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+            NSString *reqString = [NSString stringWithFormat:@"%@",request];
+            if ([[request.content.header lowercaseString] containsString:@"snoozed"]) {
+                for (id entry in allNotifs) {
+                    NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@"timestamp: "] mutableCopy];
+                    NSString *identifier = (NSString*)parts[1];
+                    if ([reqString containsString:identifier]) [snoozingNotifications addObject:request];
+                    else [notificationsToClear addObject:request];
+                }
+            }
+        }
+
+        [self.dispatcher destination:nil requestsClearingNotificationRequests:notificationsToClear];
+    }
+    self.notificationRequests[bundleIdentifier] = nil;
+}
+
+-(void)clearAll {
+    NSMutableArray *notificationsToClear;
+    NSMutableArray *snoozingNotifications;
+    for(NSString *item in [self.notificationRequests allKeys]) {
+        for (NCNotificationRequest *request in [self allRequestsForBundleIdentifier:item]) {
+            NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
+            NSString *reqString = [NSString stringWithFormat:@"%@",request];
+            if ([[request.content.header lowercaseString] containsString:@"snoozed"]) {
+                for (id entry in allNotifs) {
+                    NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@"timestamp: "] mutableCopy];
+                    NSString *identifier = (NSString*)parts[1];
+                    if ([reqString containsString:identifier]) [snoozingNotifications addObject:request];
+                    else [notificationsToClear addObject:request];
+                }
+            }
+        }
+        [self.dispatcher destination:nil requestsClearingNotificationRequests:notificationsToClear];
+        self.notificationRequests[item] = snoozingNotifications;
+    }
 }
 %end
 %end
@@ -1854,6 +1961,7 @@ static void loadPrefs() {
     if ( [prefs objectForKey:@"TweakisEnabled"] ? [[prefs objectForKey:@"TweakisEnabled"] boolValue] : YES ) {
 		enabled = YES;
 		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
+		chosenButton = [[prefs objectForKey:@"chosenButton"] intValue];
         deliverQuietlyWhilePlaying = [[prefs objectForKey:@"deliverQuietlyWhilePlaying"] boolValue];
         if (deliverQuietlyWhilePlaying) %init(deliverQuietly);
 	}

@@ -5,6 +5,18 @@
 #import <CepheiPrefs/HBAppearanceSettings.h>
 #import <Cephei/HBPreferences.h>
 
+@interface BSAction : NSObject
+@end
+
+@interface SBSRelaunchAction : BSAction
++(id)actionWithReason:(id)arg1 options:(unsigned long long)arg2 targetURL:(id)arg3 ;
+@end
+
+@interface FBSSystemService : NSObject
++(id)sharedService;
+-(void)sendActions:(id)arg1 withResult:(/*^block*/id)arg2 ;
+@end
+
 @interface UIScrollView (fix)
 @property (getter=_minimumContentOffset,nonatomic,readonly) CGPoint minimumContentOffset;
 @end

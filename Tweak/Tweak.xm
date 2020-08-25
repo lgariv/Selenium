@@ -70,6 +70,7 @@ static NSString *STEPPER;
 @property(retain, nonatomic) NSMutableArray *notificationSections;
 @end
 @interface NCNotificationStructuredSectionList
+@property (nonatomic,copy) NSString * logDescription;
 @property (nonatomic,readonly) NSArray * allNotificationRequests;
 @end
 @interface NCNotificationStructuredListViewController <clvc>
@@ -217,7 +218,6 @@ static NSDictionary *notifInfo;
     reqToBeSnoozed = snoozedCell.contentViewController.notificationRequest;
     NSLog(@"snoozedCell: %@", snoozedCell);
     %orig;
-    NSLog(@"[Selenium] self.superview: %@", self.superview);
 }
 
 %new
@@ -301,7 +301,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
-    storeSnoozed(request, NO, (interval == -2) ? YES : NO);
+    if (![[request.content.header lowercaseString] containsString:@"snoozed"]) storeSnoozed(request, NO, (interval == -2) ? YES : NO);
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
@@ -623,17 +623,11 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 @end
 
 @interface _SBAlertController : UIAlertController
-@property (assign,nonatomic) SBAlertItem * alertItem;                                             //@synthesize alertItem=_alertItem - In the implementation block
+@property (assign,nonatomic) SBAlertItem * alertItem;
 -(void)setAlertItem:(SBAlertItem *)arg1 ;
 @end
 
 @interface SBRingerPillView : UIView
-@end
-
-@interface SBUIChevronView : UIView
--(void)setColor:(UIColor *)arg1 ;
--(void)setState:(long long)arg1 animated:(BOOL)arg2;
--(void)setAnimationDuration:(double)arg1 ;
 @end
 
 %hook CSCoverSheetViewController
@@ -649,7 +643,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showDonateController:) name:@"com.miwix.selenium.donate" object:nil];
 
     config = [[NSMutableDictionary dictionaryWithContentsOfFile:configPath] mutableCopy];
-    //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"dictionaryKey"] mutableCopy];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showMuteMenu:) name:@"com.miwix.selenium.menu" object:nil];
     
     #pragma mark remove already snoozed notifications from entries
@@ -737,7 +730,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             [stackView.centerXAnchor constraintEqualToAnchor:[donateController view].centerXAnchor constant:0].active = YES;
             [stackView.centerYAnchor constraintEqualToAnchor:[donateController view].centerYAnchor constant:-10.0f].active = YES;
             [stackView.widthAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:[[UIScreen mainScreen] bounds].size.width/1.15f].active = YES;
-            //[stackView.heightAnchor constraintEqualToAnchor:[donateController view].widthAnchor constant:50.0f].active = YES;
             [textLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
             [textLabel.widthAnchor constraintEqualToAnchor:nil constant:[[UIScreen mainScreen] bounds].size.width/1.3f].active = YES;
             [closeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
@@ -748,27 +740,6 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             donateController.modalInPopover = YES;
         }
     });
-}
-
-%new
-- (void)animateTransition:(id)transitionContext {
-    UIViewController* firstVC = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
-    UIViewController* secondVC = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
-    UIView* containerView = [transitionContext containerView];
-    UIView* firstView = firstVC.view;
-    UIView* secondView = secondVC.view;
-        [containerView addSubview:secondView];
-        secondView.frame = (CGRect){
-            containerView.frame.origin.x,
-            containerView.frame.origin.y + containerView.frame.size.height,
-            containerView.frame.size
-        };
-        firstView.tintAdjustmentMode = UIViewTintAdjustmentModeDimmed;
-        [UIView animateWithDuration:1.0 animations:^{
-            secondView.frame = containerView.frame;
-        } completion:^(BOOL finished) {
-            [transitionContext completeTransition:YES];
-        }];
 }
 
 %new
@@ -1131,8 +1102,8 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     if (superView.grouped && [superView.visibleViews count] > 1) {
         view = superView;
     } else {
-        //view = [(NCNotificationListCell*)viewB contentViewController].notificationViewControllerView;
-        view = viewB;
+        view = [(NCNotificationListCell*)viewB contentViewController].notificationViewControllerView;
+        //view = viewB;
     }
 
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:view.bounds.size];
@@ -1150,9 +1121,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 	    renderer = nil;
         return imageRender;
     }
-
-	renderer = nil;
-    return imageRender;
 }
 
 %new
@@ -1242,19 +1210,23 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %new
 -(void)tappedToChange:(UIButton *)sender {
     NSDictionary* userInfo = [lastTimer userInfo];
-    if (userInfo[@"grouped"]) {
+    if ([userInfo[@"grouped"] intValue] == 1) {
         for (NCNotificationRequest *request in userInfo[@"requests"]) {
             processEntry(request, 0, nil);
         }
         [[AXNManager sharedInstance] showNotificationRequests:userInfo[@"requests"]];
     } else {
+        NSLog(@"[Selenium] lastTimer: %lld",[userInfo[@"requests"] count]);
         NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
         processEntry(request, 0, nil);
         [[AXNManager sharedInstance] showNotificationRequest:request];
     }
     [lastTimer invalidate];
     lastTimer = nil;
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC));
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"com.miwix.selenium.menu" object:nil userInfo:notifInfo];
+    });
 }
 
 %new
@@ -1573,7 +1545,7 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %new
 -(void)timerOperations:(id)timer {
     NSDictionary* userInfo = [(PCSimpleTimer *)timer userInfo];
-    if (userInfo[@"grouped"]) {
+    if ([userInfo[@"grouped"] intValue] == 1) {
         for (NCNotificationRequest *request in userInfo[@"requests"]) {
             processEntry(request, 0, nil);
         }

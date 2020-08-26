@@ -28,7 +28,7 @@ jobs:
         TMP=$(mktemp -d)
         unzip iOS_13.5.zip -d $TMP
         mv $TMP/*.sdk theos/sdks
-        rm -r master.zip $TMP
+        rm -r iOS_13.5.zip $TMP
     - name: Build Package
       id: build_package
       run: |

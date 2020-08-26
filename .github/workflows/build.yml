@@ -26,13 +26,13 @@ jobs:
       run: |
         curl -LO https://github.com/LeoNatan/Apple-Runtime-Headers/archive/iOS_13.5.zip
         TMP=$(mktemp -d)
-        unzip master.zip -d $TMP
-        mv $TMP/Apple-Runtime-Headers-master/*.sdk theos/sdks
+        unzip iOS_13.5.zip -d $TMP
+        mv $TMP/*.sdk theos/sdks
         rm -r master.zip $TMP
     - name: Build Package
       id: build_package
       run: |
-        make package FINALPACKAGE=1 SYSROOT=$(THEOS)/sdks/iPhoneOS13.5.1.sdk
+        make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Create Release
       id: create_release

@@ -24,11 +24,8 @@ jobs:
         submodules: recursive
     - name: Download SDKs
       run: |
-        curl -LO https://github.com/LeoNatan/Apple-Runtime-Headers/archive/iOS_13.5.zip
-        TMP=$(mktemp -d)
-        unzip iOS_13.5.zip -d $TMP
-        mv $TMP/*.sdk theos/sdks
-        rm -r iOS_13.5.zip $TMP
+        svn checkout https://github.com/LeoNatan/Apple-Runtime-Headers/trunk/iOS
+        mv iOS/ theos/sdks/iPhoneOS13.5.sdk
     - name: Build Package
       id: build_package
       run: |

@@ -24,8 +24,9 @@ jobs:
         submodules: recursive
     - name: Download SDKs
       run: |
+        cd $THEOS/sdks
         svn checkout https://github.com/LeoNatan/Apple-Runtime-Headers/trunk/iOS
-        mv iOS/ theos/sdks/iPhoneOS13.5.sdk
+        mv iOS/ iPhoneOS13.5.sdk/
     - name: Build Package
       id: build_package
       run: |

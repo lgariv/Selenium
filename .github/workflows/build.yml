@@ -9,7 +9,8 @@ jobs:
     runs-on: macOS-latest
     env:
       THEOS: theos
-steps:
+
+    steps:
     - name: Checkout
       uses: actions/checkout@master
     - name: Install Dependencies
@@ -28,13 +29,11 @@ steps:
         unzip master.zip -d $TMP
         mv $TMP/iOS-13-Patched-SDK-master/*.sdk theos/sdks
         rm -r master.zip $TMP
-
     - name: Build Package
       id: build_package
       run: |
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
-
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -45,7 +44,6 @@ steps:
         release_name: Release ${{ github.ref }}
         draft: true
         prerelease: false
-
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:

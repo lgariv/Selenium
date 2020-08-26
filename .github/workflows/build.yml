@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Build App
-    runs-on: macOS-latest
+    runs-on: self-hosted
     env:
       THEOS: theos
 

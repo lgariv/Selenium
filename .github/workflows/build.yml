@@ -16,7 +16,7 @@ jobs:
     - name: Build Package
       id: build_package
       run: |
-        make package FINALPACKAGE=1
+        make package -j
         echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Create Release
       id: create_release

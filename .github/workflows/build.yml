@@ -32,6 +32,7 @@ jobs:
     - name: Build Package
       id: build_package
       run: |
+        export SYSROOT = $(THEOS)/sdks/iPhoneOS13.5.1.sdk
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Create Release

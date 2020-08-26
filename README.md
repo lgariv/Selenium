@@ -8,7 +8,7 @@ With Selenium, users can snooze notifications, which causes them to disappear fo
 
 Selenium is based on code from several open-source tweaks, including Dune, QuietDown, with the actual notification snoozing being managed by Axon library combined with PCSimpleTimer.
 
-Soon enough, Selenium will be open-sourced as well.
+Selenium is open-sourced as well.
 
 <span style="Color:#AE829B"> **Features** </span>
 
@@ -42,9 +42,9 @@ Soon enough, Selenium will be open-sourced as well.
 
 • ~Create pref pane with options to choose UIDatePicker intervals, choosing wether "Tap To Change" should appear when tapping on snooze or just straight open the UIAlertController, choose UIStepper intervals, and what snooze options should be available (currently there are supposed to be only 2, but should be more useful when more options like DND and location are added).~ ✅ Prefs created, some of these options will be added soon.
 
-• Not compatible with Axon, but compatible with Grupi. Need to figure out how to make it compatible with Axon.
+• ~Not compatible with Axon, but compatible with Grupi. Need to figure out how to make it compatible with Axon.~
 
-• \[Maybe for a future update\]Make an option for the Snooze button in the notification cell actions snooze automatically using the last setting used, and only open the UIAlertController when using the 'Tap To Change' option after that (and also not in the form of a UIAlertController, should expand on a tap to a view that looks more like a floating AirPods / App Clip menu in the middle of the screen).
+• \[Maybe for a future update\] Make an option for the Snooze button in the notification cell actions snooze automatically using the last setting used, and only open the UIAlertController when using the 'Tap To Change' option after that (and also not in the form of a UIAlertController, should expand on a tap to a view that looks more like a floating AirPods / App Clip menu in the middle of the screen).
 
 • \[Optional\] In addition to the previous one, also add a subtitle to the Snooze action in the notification cell that says what was the last used option.
 

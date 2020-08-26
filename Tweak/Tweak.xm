@@ -1990,7 +1990,6 @@ static void loadPrefs() {
     if (enabled && !dpkgInvalid) {
         %init(Selenium);
         if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axonreborn.md5sums"]) %init(AxonFix); // Initiate Axon compatibility fix if Axon Reborn is installed.
-        return;
     }
 
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seleniumprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);

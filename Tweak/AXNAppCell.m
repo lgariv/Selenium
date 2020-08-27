@@ -257,7 +257,7 @@
 
     CGRect frame = self.blurView.frame;
     if(darkMode) {
-      id materialView = objc_getClass("MTMaterialView");
+      id materialView = NSClassFromString(@"MTMaterialView");
       if([materialView respondsToSelector:@selector(materialViewWithRecipe:options:)]) {
         self.blurView = [materialView materialViewWithRecipe:MTMaterialRecipeNotifications options:MTMaterialOptionsBlur];
       } else {

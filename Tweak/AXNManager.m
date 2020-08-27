@@ -22,8 +22,8 @@
 }
 
 -(id)init {
-  [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] addObserver:self selector:@selector(clearAll) name:@"me.nepeta.axon.clearAllNotification" object:nil];
-  [[objc_getClass("NSDistributedNotificationCenter") defaultCenter] addObserver:self selector:@selector(saveNotificationForDebug) name:@"me.nepeta.axon.saveNotification" object:nil];
+  [[NSClassFromString(@"NSDistributedNotificationCenter") defaultCenter] addObserver:self selector:@selector(clearAll) name:@"me.nepeta.axon.clearAllNotification" object:nil];
+  [[NSClassFromString(@"NSDistributedNotificationCenter") defaultCenter] addObserver:self selector:@selector(saveNotificationForDebug) name:@"me.nepeta.axon.saveNotification" object:nil];
   return self;
 }
 

@@ -64,8 +64,8 @@
 	[UIView animateWithDuration:1.0f animations:^{
 		[view setAlpha:1];
 	} completion:^(BOOL finished) {
-		SBSRelaunchAction *restartAction = [objc_getClass("SBSRelaunchAction") actionWithReason:@"RestartRenderServer" options:2 targetURL:nil];
-		[[objc_getClass("FBSSystemService") sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
+		SBSRelaunchAction *restartAction = [NSClassFromString(@"SBSRelaunchAction") actionWithReason:@"RestartRenderServer" options:2 targetURL:nil];
+		[[NSClassFromString(@"FBSSystemService") sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
 	}];
 }
 

@@ -204,10 +204,15 @@ static NSDictionary *notifInfo;
     // Process only if 3 CellActionButton are present
     // Less than 3 means the left option pannel is opened or the right one is already processed
     if (buttonsArray.count == 3) {
-        // Replace the View option 
+        // Replace the View option
         buttonsArray[chosenButton].title = SNOOZE;
         [buttonsArray[chosenButton] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
         [buttonsArray[chosenButton] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
+    } else if (buttonsArray.count == 2 && chosenButton == 1) {
+        // Replace the View option
+        buttonsArray[0].title = SNOOZE;
+        [buttonsArray[0] removeTarget:nil action:NULL forControlEvents:UIControlEventAllEvents]; 
+        [buttonsArray[0] addTarget:self action:@selector(swipedUp:) forControlEvents:UIControlEventTouchUpInside];
     }
 }
 
@@ -301,7 +306,15 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     [entries removeObject:remove];
   }
   if (add) {
-    if (![[request.content.header lowercaseString] containsString:@"snoozed"]) storeSnoozed(request, NO, (interval == -2) ? YES : NO);
+    //NSMutableArray *snoozedCache = [config[@"snoozedCache"] mutableCopy];
+    @try {
+        /*if (![[request.content.header lowercaseString] containsString:@"snoozed"])*/ storeSnoozed(request, NO, (interval == -2) ? YES : NO);
+    }
+    @catch ( NSException *exception ) {
+          if (exception) {
+            NSLog(@"[Selenium] ERROR:%@", exception);
+          }
+    }
     NSDictionary *info;
     if (interval < 0) {
         if (interval == -1)
@@ -1732,45 +1745,8 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 %end
 
 %group AxonFix // Trying to fix Axon compatibility issues
+#import "AXNRequestWrapper.h"
 %hook AXNManager
-/*-(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier {
-    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
-    NSInteger snoozedCount = 0;
-    for (id entry in allNotifs) {
-        NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
-        NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
-        NSString *snoozedBundleID = (NSString*)parts[0];
-        if ([bundleIdentifier isEqualToString:snoozedBundleID]) snoozedCount++;
-    }
-
-    NSArray *requests = [[AXNManager sharedInstance] requestsForBundleIdentifier:bundleIdentifier];
-    NSInteger count = [requests count];
-    if (count == 0) {
-        [AXNManager sharedInstance].countCache[bundleIdentifier] = @(0);
-        return;
-    }
-
-    if ([[AXNManager sharedInstance].dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
-        count = 0;
-        NSMutableArray *coalescedNotifications = [NSMutableArray new];
-        for (NCNotificationRequest *req in requests) {
-            NCCoalescedNotification *coalesced = [[AXNManager sharedInstance] coalescedNotificationForRequest:req];
-            if (!coalesced) {
-                count++;
-                continue;
-            }
-
-            if (![coalescedNotifications containsObject:coalesced]) {
-                count += [coalesced.notificationRequests count];
-                [coalescedNotifications addObject:coalesced];
-            }
-        }
-    }
-
-    //NSLog(@"[COUNTCOUNT] count: %zd snoozedCount: %zd",count,snoozedCount);
-    [AXNManager sharedInstance].countCache[bundleIdentifier] = @(count);
-}*/
-
 -(void)updateCountForBundleIdentifier:(NSString *)bundleIdentifier {
     NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
     NSInteger snoozedCount = 0;
@@ -1808,22 +1784,6 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     self.countCache[bundleIdentifier] = @(count-snoozedCount);
 }
 
-/*-(NSInteger)countForBundleIdentifier:(NSString *)bundleIdentifier {
-    NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
-    unsigned int count = 0;
-    for (id entry in allNotifs) {
-        NSArray *sectionId = [entry[@"id"] componentsSeparatedByString:@"sectionId: "];
-        NSMutableArray *parts = [[sectionId[1] componentsSeparatedByString:@"; "] mutableCopy];
-        NSString *snoozedBundleID = (NSString*)parts[0];
-        if ([bundleIdentifier isEqualToString:snoozedBundleID]) count++;
-    }
-
-    if (%orig(bundleIdentifier)-count < 0)
-    return 0;
-    else
-    return %orig(bundleIdentifier)-count;
-}*/
-
 -(void)showNotificationRequest:(id)req {
     NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
     NCNotificationRequest *request = req;
@@ -1850,45 +1810,36 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
 }
 
 -(void)clearAll:(NSString *)bundleIdentifier {
-    NSMutableArray *notificationsToClear;
-    NSMutableArray *snoozingNotifications;
+    NSMutableArray __block *notificationsToClear = [[NSMutableArray alloc] init];
+    NSMutableArray __block *snoozingNotifications = [[NSMutableArray alloc] init];
     if (self.notificationRequests[bundleIdentifier]) {
-        for (NCNotificationRequest *request in self.notificationRequests[bundleIdentifier]) {
+        for (AXNRequestWrapper *wrappedRequest in self.notificationRequests[bundleIdentifier]) {
+            NCNotificationRequest *request = [wrappedRequest request];
             NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
-            NSString *reqString = [NSString stringWithFormat:@"%@",request];
+            NSString *reqString;
+            reqString = [NSString stringWithFormat:@"%@",request];
             if ([[request.content.header lowercaseString] containsString:@"snoozed"]) {
                 for (id entry in allNotifs) {
                     NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@"timestamp: "] mutableCopy];
                     NSString *identifier = (NSString*)parts[1];
                     if ([reqString containsString:identifier]) [snoozingNotifications addObject:request];
-                    else [notificationsToClear addObject:request];
                 }
-            }
+            } else [notificationsToClear addObject:request];
         }
-
         [self.dispatcher destination:nil requestsClearingNotificationRequests:notificationsToClear];
     }
-    self.notificationRequests[bundleIdentifier] = nil;
+
+    NSMutableArray __block *notificationsToSave = [[NSMutableArray alloc] init];
+    for (NCNotificationRequest *req in snoozingNotifications) {
+        [notificationsToClear addObject:[AXNRequestWrapper wrapRequest:req]];
+    }
+
+    self.notificationRequests[bundleIdentifier] = notificationsToSave;
 }
 
 -(void)clearAll {
-    NSMutableArray *notificationsToClear;
-    NSMutableArray *snoozingNotifications;
-    for(NSString *item in [self.notificationRequests allKeys]) {
-        for (NCNotificationRequest *request in [self allRequestsForBundleIdentifier:item]) {
-            NSMutableArray *allNotifs = [config[@"entries"] mutableCopy];
-            NSString *reqString = [NSString stringWithFormat:@"%@",request];
-            if ([[request.content.header lowercaseString] containsString:@"snoozed"]) {
-                for (id entry in allNotifs) {
-                    NSMutableArray *parts = [[entry[@"id"] componentsSeparatedByString:@"timestamp: "] mutableCopy];
-                    NSString *identifier = (NSString*)parts[1];
-                    if ([reqString containsString:identifier]) [snoozingNotifications addObject:request];
-                    else [notificationsToClear addObject:request];
-                }
-            }
-        }
-        [self.dispatcher destination:nil requestsClearingNotificationRequests:notificationsToClear];
-        self.notificationRequests[item] = snoozingNotifications;
+    for (NSString *item in [self.notificationRequests allKeys]) {
+        [self clearAll:item];
     }
 }
 %end

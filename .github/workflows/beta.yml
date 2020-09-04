@@ -15,22 +15,6 @@ jobs:
       uses: actions/checkout@master
     - name: Install Dependencies
       run: brew install ldid xz
-    - name: Setup Theos
-      uses: actions/checkout@master
-      with:
-        repository: lgariv/theos
-        ref: abd8d442ba2df9c1cc1b1133e28bda31d704ba7f
-        path: theos
-        submodules: recursive
-    - name: Update Make
-      run: |
-        brew install make
-        echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
-    - name: Build Package
-      id: build_package
-      run: |
-        make package FINALPACKAGE=1
-        echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Manage Version
       run: |
         VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
@@ -48,6 +32,22 @@ jobs:
         tag_name: ${{ env.OLD_PRE_TAG }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Setup Theos
+      uses: actions/checkout@master
+      with:
+        repository: lgariv/theos
+        ref: abd8d442ba2df9c1cc1b1133e28bda31d704ba7f
+        path: theos
+        submodules: recursive
+    - name: Update Make
+      run: |
+        brew install make
+        echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
+    - name: Build Package
+      id: build_package
+      run: |
+        make package FINALPACKAGE=1 -j
+        echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1

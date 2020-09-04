@@ -5,7 +5,7 @@ on:
       - created
 jobs:
   build:
-    name: Build Tweak
+    name: Build App
     runs-on: macOS-latest
     env:
       THEOS: theos

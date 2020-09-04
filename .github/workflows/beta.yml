@@ -14,9 +14,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
     - name: Install Dependencies
-      run: |
-        brew install ldid xz make
-        echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
+      run: brew install ldid xz
     - name: Setup Theos
       uses: actions/checkout@master
       with:
@@ -24,6 +22,10 @@ jobs:
         ref: abd8d442ba2df9c1cc1b1133e28bda31d704ba7f
         path: theos
         submodules: recursive
+    - name: Update Make
+      run: |
+        brew install make
+        echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
     - name: Build Package
       id: build_package
       run: |

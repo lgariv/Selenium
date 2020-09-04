@@ -27,6 +27,8 @@ jobs:
     - name: Build Package
       id: build_package
       run: |
+        VERSION = "$(cat control | grep Version | sed -n 's/Version: //gp')"
+        echo "::set-env name=TWEAK_VER::$VERSION"
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
     - name: Create Release
@@ -35,10 +37,10 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}-beta
-        release_name: Beta ${{ github.ref }}
+        tag_name: v${{ env.TWEAK_VER }}-beta
+        release_name: Beta ${{ env.TWEAK_VER }}
         draft: false
-        prerelease: false
+        prerelease: true
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:

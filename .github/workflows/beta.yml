@@ -31,7 +31,7 @@ jobs:
       run: |
         VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
         echo "::set-env name=TWEAK_VER::$VERSION"
-        CUR_TAG="$(git tag -l | grep 'alpha\|beta' | tail -1)"
+        CUR_TAG="$(git tag -l | grep beta)"
         if [[ -z $CUR_TAG ]]; then
           echo "::set-output name=OLD_PRE_TAG::NULL"
         else

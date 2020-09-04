@@ -15,8 +15,7 @@ jobs:
       uses: actions/checkout@master
     - name: Install Dependencies
       run: |
-        brew install ldid xz
-        brew install make
+        brew install ldid xz make
         echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
     - name: Setup Theos
       uses: actions/checkout@master
@@ -36,8 +35,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ github.ref }}-beta
+        release_name: Beta ${{ github.ref }}
         draft: false
         prerelease: false
     - name: Upload Release Asset

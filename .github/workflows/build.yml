@@ -15,8 +15,7 @@ jobs:
       uses: actions/checkout@master
     - name: Install Dependencies
       run: |
-        brew install ldid xz
-        brew install make
+        brew install ldid xz make
         echo PATH=\"$(brew --prefix make)/libexec/gnubin:\$PATH\"
     - name: Setup Theos
       uses: actions/checkout@master
@@ -28,7 +27,7 @@ jobs:
     - name: Build Package
       id: build_package
       run: |
-        VERSION = "$(cat control | grep Version | sed -n 's/Version: //gp')"
+        VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
         echo "::set-env name=TWEAK_VER::$VERSION"
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"

@@ -31,19 +31,21 @@ jobs:
       run: |
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
+    - name: Manage Version
+      run: |
         git fetch --prune --unshallow --tags
         VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
         echo "::set-env name=TWEAK_VER::$VERSION"
         CUR_TAG="$(git tag -l | grep beta)"
         if [[ -z $CUR_TAG ]]; then
-          echo "::set-output name=OLD_PRE_TAG::NULL"
+          echo "::set-env name=OLD_PRE_TAG::NULL"
         else
-          echo "::set-output name=OLD_PRE_TAG::$CUR_TAG"
+          echo "::set-env name=OLD_PRE_TAG::$CUR_TAG"
         fi
     - name: Delete Old Prerelease
       uses: dev-drprasad/delete-tag-and-release@v0.1.2
       with:
-        tag_name: ${{ steps.build_package.outputs.OLD_PRE_TAG }}
+        tag_name: ${{ env.OLD_PRE_TAG }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Release

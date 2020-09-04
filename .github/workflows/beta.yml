@@ -27,10 +27,24 @@ jobs:
     - name: Build Package
       id: build_package
       run: |
-        VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
-        echo "::set-env name=TWEAK_VER::$VERSION"
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
+    - name: Manage Version
+      run: |
+        VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
+        echo "::set-env name=TWEAK_VER::$VERSION"
+        CUR_TAG="$(git tag -l | grep 'alpha\|beta' | tail -1)"
+        if [[ -z $CUR_TAG ]]; then
+          echo "::set-env name=OLD_PRE_TAG::NULL"
+        else
+          echo "::set-env name=OLD_PRE_TAG::$CUR_TAG"
+        fi
+    - name: Delete Old Prerelease
+      uses: dev-drprasad/delete-tag-and-release@v0.1.2
+      with:
+        tag_name: ${{ env.OLD_PRE_TAG }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1

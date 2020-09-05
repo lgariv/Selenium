@@ -31,24 +31,31 @@ jobs:
       run: |
         make package FINALPACKAGE=1
         echo "::set-output name=package::$(ls -t packages | head -n1)"
+        echo "::set-output name=exit_code::$?"
     - name: Manage Version
+      if: ${{ steps.build_package.outputs.package != 0 }}
       run: |
+        set +e
         git fetch --prune --unshallow --tags
         VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
         echo "::set-env name=TWEAK_VER::$VERSION"
         CUR_TAG="$(git tag -l | grep beta)"
         if [[ -z $CUR_TAG ]]; then
-          echo "::set-env name=OLD_PRE_TAG::NULL"
+          echo "::set-env name=OLD_PRE_TAG::"
         else
           echo "::set-env name=OLD_PRE_TAG::$CUR_TAG"
         fi
-    - name: Delete Old Prerelease
+        exit 0
+        set -e
+    - name: Delete Old Prerelease (if there are any)
       uses: dev-drprasad/delete-tag-and-release@v0.1.2
+      if: ${{ env.OLD_PRE_TAG != 0 && steps.build_package.outputs.package != 0 }}
       with:
         tag_name: ${{ env.OLD_PRE_TAG }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Release
+      if: ${{ steps.build_package.outputs.package != 0 }}
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -59,6 +66,7 @@ jobs:
         draft: false
         prerelease: true
     - name: Upload Release Asset
+      if: ${{ steps.build_package.outputs.package != 0 }}
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -55,4 +55,14 @@
 
 @interface SBNCScreenController : NSObject
 -(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 ;
+
+// %new
++ (id)sharedInstance;
+@end
+
+@interface SBNCSoundController : NSObject
+-(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 ;
+
+// %new
++ (id)sharedInstance;
 @end

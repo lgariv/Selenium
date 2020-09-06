@@ -133,20 +133,21 @@ static NSString *STEPPER;
     NCNotificationRequest* _notificationRequest;
 }
 @property (getter=_notificationViewControllerView,nonatomic,readonly) NCNotificationViewControllerView * notificationViewControllerView; 
-@property (nonatomic,retain) NCNotificationRequest * notificationRequest;                                                                                                                                                    //@synthesize notificationRequest=_notificationRequest - In the implementation block
+@property (nonatomic,retain) NCNotificationRequest * notificationRequest;
 @end
 
 @protocol NCNotificationListViewDataSource <NSObject>
 @end
 
 @interface NCNotificationGroupList : NSObject <NCNotificationListViewDataSource>
-@property (nonatomic,retain) NSMutableArray * orderedRequests;                                          //@synthesize orderedRequests=_orderedRequests - In the implementation block
+@property (nonatomic,retain) NSMutableArray * orderedRequests;
 @end 
 
 @interface NCNotificationListView : UIScrollView
 @property (assign,getter=isGrouped,nonatomic) BOOL grouped;
 @property (assign,readwrite) NCNotificationGroupList<NCNotificationListViewDataSource> *dataSource;
 @property(retain, nonatomic) NSMutableDictionary *visibleViews;
+- (void)reloadHeaderView;
 @end
 
 @interface NCNotificationListCell : UIView {
@@ -164,11 +165,8 @@ static NSString *STEPPER;
 @end
 
 @interface NCNotificationListCellActionButton : UIControl
-@property (nonatomic,retain) UILabel * titleLabel;                                                                       //@synthesize titleLabel=_titleLabel - In the implementation block
-@end
-
-@interface UIView (FUCK)
-@property (nonatomic,copy) NSString * title;                                                                             //@synthesize title=_title - In the implementation block
+@property (nonatomic,retain) UILabel * titleLabel;
+@property (nonatomic,copy) NSString * title;
 @end
 
 NSString *bundleID;
@@ -221,7 +219,6 @@ static NSDictionary *notifInfo;
     bundleID = argToDismiss.sectionIdentifier;
     snoozedCell = arg3;
     reqToBeSnoozed = snoozedCell.contentViewController.notificationRequest;
-    NSLog(@"snoozedCell: %@", snoozedCell);
     %orig;
 }
 
@@ -354,7 +351,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
     	NCNotificationRequest* _request;
 }
 @property (nonatomic,retain) NCNotificationRequest * request;    
--(id)initWithRequest:(id)arg1 withPresentingView:(id)arg2 settingsDelegate:(id)arg3 ;                                                         //@synthesize request=_request - In the implementation block
+-(id)initWithRequest:(id)arg1 withPresentingView:(id)arg2 settingsDelegate:(id)arg3 ;
 @end
 
 @interface NCNotificationManagementBlueButton : UIButton
@@ -1665,12 +1662,30 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     NCNotificationRequest *request = (NCNotificationRequest *)userInfo[@"request"];
     processEntry(request, 0, nil);
     [[AXNManager sharedInstance] showNotificationRequest:request];
+    [[%c(SBNCScreenController) sharedInstance] turnOnScreenForNotificationRequest:request];
+    NSLog(@"[Selenium] screen SI: %@",[%c(SBNCScreenController) sharedInstance]);
+    [[%c(SBNCSoundController) sharedInstance] playSoundForNotificationRequest:request presentingDestination:nil];
+    NSLog(@"[Selenium] sound SI: %@",[%c(SBNCSoundController) sharedInstance]);
 }
 %end
 
 // Controls whether the screen should wake up for a notification when it is arriving. Doesn't have much use now, but will be useful for DND.
-/*%hook SBNCScreenController
--(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
+%hook SBNCScreenController
+-(id)init {
+    return self;
+}
+
+%new
++ (id)sharedInstance {
+    static SBNCScreenController *sharedInstance = nil;
+    static dispatch_once_t screenToken;
+    dispatch_once(&screenToken, ^{
+        sharedInstance = [[%c(SBNCScreenController) alloc] init];
+    });
+    return sharedInstance;
+}
+
+/*-(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
@@ -1690,12 +1705,26 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         }
     }
     %orig;
-}
+}*/
 %end
 
 // Controls whether a sound will be played (and what sound) for a notification when it is arriving. Doesn't have much use now, but will be useful for DND.
 %hook SBNCSoundController
--(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
+-(id)init {
+    return self;
+}
+
+%new
++ (id)sharedInstance {
+    static SBNCSoundController *sharedInstance = nil;
+    static dispatch_once_t soundToken;
+    dispatch_once(&soundToken, ^{
+        sharedInstance = [[%c(SBNCSoundController) alloc] init];
+    });
+    return sharedInstance;
+}
+
+/*-(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
     NSMutableArray *entries = [config[@"entries"] mutableCopy];
@@ -1715,11 +1744,11 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
         }
     }
     %orig;
-}
+}*/
 %end
 
 // Displays a banner for a notification when it is arriving. Doesn't have much use now.
-%hook SBNotificationBannerDestination
+/*%hook SBNotificationBannerDestination
 -(void)_postNotificationRequest:(id)arg1 modal:(BOOL)arg2 completion:(id)arg3 {
     //NSMutableDictionary *config = [[[NSUserDefaults standardUserDefaults] objectForKey:@"dictionaryKey"] mutableCopy];
     NSString *req = [NSString stringWithFormat:@"%@", arg1];
@@ -1742,6 +1771,28 @@ labelStackView.alignment = UIStackViewAlignmentLeading;
     %orig;
 }
 %end*/
+
+// prevent snoozed indicator from appearing as grouped notifications title.
+%hook NCNotificationListCoalescingHeaderCell
+%property (nonatomic,copy) NSString * title;
++(double)coalescingHeaderCellHeightForWidth:(double)arg1 title:(NSString *)arg2 {
+    if ([[arg2 lowercaseString] containsString:@"snoozed"]) {
+        NSString *string = [arg2 componentsSeparatedByString:@" •"][0];
+        return %orig(arg1,string);
+    } else {
+        return %orig(arg1,arg2);
+    }
+}
+
+-(void)setTitle:(NSString *)arg1 {
+    if ([[arg1 lowercaseString] containsString:@"snoozed"]) {
+        NSString *string = [arg1 componentsSeparatedByString:@" •"][0];
+        %orig(string);
+    } else {
+        %orig(arg1);
+    }
+}
+%end
 %end
 
 %group AxonFix // Trying to fix Axon compatibility issues

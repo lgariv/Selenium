@@ -39,4 +39,10 @@
 	<string>Tippen zum ändern</string>
 	<key>STEPPER</key>
 	<string>Schrittweise</string>
+	<key>ARRIVELOCATION</key>
+	<string>Bis ich vor Ort sein werde</string>
+	<key>LEAVELOCATION</key>
+	<string>Bis ich einen Ort verlasse</string>
+	<key>LOCATION</key>
+	<string>Ort</string>
 </dict>

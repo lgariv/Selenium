@@ -1,0 +1,54 @@
+#!/usr/bin/bash
+
+set -e
+x=1
+while [ $x -eq 1 ]
+do
+#ARG="install"
+#if [ "$ARG" == "$1" ]; then
+    echo "[Selenium] Checking files..."
+    FILE="/Library/Application Support/SeleniumExtra.bundle/txt.txt"
+    if test -f "$FILE"; then
+        chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/txt.txt"
+    fi
+    INFO="/System/Library/CoreServices/SpringBoard.app/Info.plist"
+    if test -f "$INFO"; then
+        BACKUP="/System/Library/CoreServices/SpringBoard.app/Info.plist.backup"
+        if test -f "$BACKUP"; then
+            echo "[Selenium] Backup exists!"
+            echo "[Selenium] Files already modified!"
+        else
+            echo "[Selenium] Backing up files..."
+            cp /System/Library/CoreServices/SpringBoard.app/Info.plist /System/Library/CoreServices/SpringBoard.app/Info.plist.backup && : || break
+            echo "[Selenium] Modifying files..."
+            plutil -convert xml1 $INFO > /dev/null 2>&1 && : || break
+            echo "[Selenium] Modifying files..."
+            LINES="$(wc -l $INFO | sed -n 's/ $INFO//gp' | sed -n 's/ //gp')"
+            echo "[Selenium] Modifying files..."
+            NEWLINES="$(echo "$((LINES - 2))")"
+            echo "[Selenium] Modifying files..."
+            echo "$(cat $INFO | head -n$NEWLINES)" > newInfo.plist && : || break
+            echo "[Selenium] Modifying files..."
+            echo "    <key>UIBackgroundModes</key>" >> newInfo.plist && : || break
+            echo "    <array>" >> newInfo.plist && : || break
+            echo "        <string>location</string>" >> newInfo.plist && : || break
+            echo "    </array>" >> newInfo.plist && : || break
+            echo "    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>" >> newInfo.plist && : || break
+            echo "    <string>Set location access to 'Always' to enable location-based features for Selenium.</string>" >> newInfo.plist && : || break
+            echo "    <key>NSLocationWhenInUseUsageDescription</key>" >> newInfo.plist && : || break
+            echo "    <string>Set location access to 'Always' to enable location-based features for Selenium.</string>" >> newInfo.plist && : || break
+            echo "</dict>" >> newInfo.plist && : || break
+            echo "</plist>" >> newInfo.plist && : || break
+            rm -r $INFO
+            mv newInfo.plist $INFO && : || break
+            plutil -convert binary1 $INFO > /dev/null 2>&1 && : || break
+            echo "[Selenium] Files modified!"
+        fi
+    fi
+    set -t
+    exit 0
+    set +t
+#fi
+x=$[$x-1]
+done
+exit 1

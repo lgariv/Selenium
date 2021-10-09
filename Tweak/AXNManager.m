@@ -57,19 +57,23 @@
         return;
     }
 
-    if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
-        count = 0;
-        NSMutableArray *coalescedNotifications = [NSMutableArray new];
-        for (NCNotificationRequest *req in requests) {
-            NCCoalescedNotification *coalesced = [self coalescedNotificationForRequest:req];
-            if (!coalesced) {
-                count++;
-                continue;
-            }
+    if (@available(iOS 14, *)) {
+        return;
+    } else {
+        if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
+            count = 0;
+            NSMutableArray *coalescedNotifications = [NSMutableArray new];
+            for (NCNotificationRequest *req in requests) {
+                NCCoalescedNotification *coalesced = [self coalescedNotificationForRequest:req];
+                if (!coalesced) {
+                    count++;
+                    continue;
+                }
 
-            if (![coalescedNotifications containsObject:coalesced]) {
-                count += [coalesced.notificationRequests count];
-                [coalescedNotifications addObject:coalesced];
+                if (![coalescedNotifications containsObject:coalesced]) {
+                    count += [coalesced.notificationRequests count];
+                    [coalescedNotifications addObject:coalesced];
+                }
             }
         }
     }
@@ -269,55 +273,63 @@
 -(NSArray *)allRequestsForBundleIdentifier:(NSString *)bundleIdentifier {
     NSArray *requests = [self requestsForBundleIdentifier:bundleIdentifier];
 
-    if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
-        NSMutableArray *allRequests = [NSMutableArray new];
-        NSMutableArray *coalescedNotifications = [NSMutableArray new];
+    if (@available(iOS 14, *)) {
+        return requests;
+    } else {
+        if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
+            NSMutableArray *allRequests = [NSMutableArray new];
+            NSMutableArray *coalescedNotifications = [NSMutableArray new];
 
-        for (NCNotificationRequest *req in requests) {
-            NCCoalescedNotification *coalesced = [self coalescedNotificationForRequest:req];
-            if (!coalesced) {
-                BOOL found = NO;
-                for (int i = 0; i < [allRequests count]; i++) {
-                    if ([[req notificationIdentifier] isEqualToString:[allRequests[i] notificationIdentifier]]) {
-                        found = YES;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    [allRequests addObject:req];
-                }
-                continue;
-            }
-
-            if (![coalescedNotifications containsObject:coalesced]) {
-                for (NCNotificationRequest *request in coalesced.notificationRequests) {
+            for (NCNotificationRequest *req in requests) {
+                NCCoalescedNotification *coalesced = [self coalescedNotificationForRequest:req];
+                if (!coalesced) {
                     BOOL found = NO;
                     for (int i = 0; i < [allRequests count]; i++) {
-                        if ([[request notificationIdentifier] isEqualToString:[allRequests[i] notificationIdentifier]]) {
+                        if ([[req notificationIdentifier] isEqualToString:[allRequests[i] notificationIdentifier]]) {
                             found = YES;
                             break;
                         }
                     }
 
                     if (!found) {
-                        [allRequests addObject:request];
+                        [allRequests addObject:req];
                     }
+                    continue;
                 }
-                [coalescedNotifications addObject:coalesced];
-            }
-        }
 
-        return allRequests;
-    } else {
+                if (![coalescedNotifications containsObject:coalesced]) {
+                    for (NCNotificationRequest *request in coalesced.notificationRequests) {
+                        BOOL found = NO;
+                        for (int i = 0; i < [allRequests count]; i++) {
+                            if ([[request notificationIdentifier] isEqualToString:[allRequests[i] notificationIdentifier]]) {
+                                found = YES;
+                                break;
+                            }
+                        }
+
+                        if (!found) {
+                            [allRequests addObject:request];
+                        }
+                    }
+                    [coalescedNotifications addObject:coalesced];
+                }
+            }
+
+            return allRequests;
+        } else {
+        }
         return requests;
     }
 }
 
 -(id)coalescedNotificationForRequest:(id)req {
     NCCoalescedNotification *coalesced = nil;
-    if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
-        coalesced = [self.dispatcher.notificationStore coalescedNotificationForRequest:req];
+    if (@available(iOS 14, *)) {
+        return nil;
+    } else {
+        if ([self.dispatcher.notificationStore respondsToSelector:@selector(coalescedNotificationForRequest:)]) {
+            coalesced = [self.dispatcher.notificationStore coalescedNotificationForRequest:req];
+        }
     }
     return coalesced;
 }

@@ -17,7 +17,6 @@
 @property (nonatomic, weak) id<clvc> clvc;
 @property (nonatomic, weak) id sbclvc;
 @property (nonatomic, weak) NCNotificationDispatcher *dispatcher;
-
 +(instancetype)sharedInstance;
 -(id)init;
 -(void)getRidOfWaste;

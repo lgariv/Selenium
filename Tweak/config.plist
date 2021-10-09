@@ -15,6 +15,6 @@
 		<array>
 		</array>
 	<key>DNDEnabled</key>
-		<true/>
+		<false/>
 </dict>
 </plist>

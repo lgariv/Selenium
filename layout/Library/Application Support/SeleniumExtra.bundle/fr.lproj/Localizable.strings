@@ -39,4 +39,10 @@
 	<string>Appuyez Pour Changer</string>
 	<key>STEPPER</key>
 	<string>Durée personnalisée</string>
+	<key>ARRIVELOCATION</key>
+	<string>jusqu'à ce que j'arriverai lieu</string>
+	<key>LEAVELOCATION</key>
+	<string>jusqu'à ce que j'quitte lieu</string>
+	<key>LOCATION</key>
+	<string>Lieu</string>
 </dict>

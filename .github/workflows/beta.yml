@@ -1,77 +1,82 @@
-name: Beta 
+name: Beta
 on:
-  push:
-    branches:
-      - master
-jobs:
-  build:
-    name: Build App
-    runs-on: macOS-latest
-    env:
-      THEOS: theos
+    push:
+        branches:
+            - "**" # matches every branch
+            - "!main" # excludes main
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Install Dependencies
-      run: brew install ldid xz
-    - name: Setup Theos
-      uses: actions/checkout@master
-      with:
-        repository: lgariv/theos
-        ref: abd8d442ba2df9c1cc1b1133e28bda31d704ba7f
-        path: theos
-        submodules: recursive
-    - name: Update Make
-      run: |
-        brew install make
-        PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
-    - name: Build Package
-      id: build_package
-      run: |
-        make package FINALPACKAGE=1
-        echo "::set-output name=package::$(ls -t packages | head -n1)"
-        echo "::set-output name=exit_code::$?"
-    - name: Manage Version
-      if: ${{ steps.build_package.outputs.package != 0 }}
-      run: |
-        set +e
-        git fetch --prune --unshallow --tags
-        VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
-        echo "::set-env name=TWEAK_VER::$VERSION"
-        CUR_TAG="$(git tag -l | grep beta)"
-        if [[ -z $CUR_TAG ]]; then
-          echo "::set-env name=OLD_PRE_TAG::"
-        else
-          echo "::set-env name=OLD_PRE_TAG::$CUR_TAG"
-        fi
-        exit 0
-        set -e
-    - name: Delete Old Prerelease (if there are any)
-      uses: dev-drprasad/delete-tag-and-release@v0.1.2
-      if: ${{ env.OLD_PRE_TAG != 0 && steps.build_package.outputs.package != 0 }}
-      with:
-        tag_name: ${{ env.OLD_PRE_TAG }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Create Release
-      if: ${{ steps.build_package.outputs.package != 0 }}
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ env.TWEAK_VER }}-beta
-        release_name: Beta v${{ env.TWEAK_VER }}
-        draft: false
-        prerelease: true
-    - name: Upload Release Asset
-      if: ${{ steps.build_package.outputs.package != 0 }}
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}          
-        asset_path: ./packages/${{ steps.build_package.outputs.package }}
-        asset_name: ${{ steps.build_package.outputs.package }}
-        asset_content_type: application/vnd.debian.binary-package
+jobs:
+    build:
+        name: Build Tweak
+        runs-on: macOS-11
+        env:
+            THEOS: theos
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@master
+            - name: Install Dependencies
+              run: brew install ldid xz
+            - name: Setup Theos
+              uses: actions/checkout@master
+              with:
+                  repository: lgariv/theos
+                  ref: 55d403d00b309c9fe4a2dbd15b409d77fa133271
+                  path: theos
+                  submodules: recursive
+            - name: Update Make
+              run: |
+                  brew install make
+                  PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+            - name: Build Package
+              id: build_package
+              run: |
+                  make package FINALPACKAGE=1
+                  echo "::set-output name=package::$(ls -t packages | head -n1)"
+                  echo "::set-output name=exit_code::$?"
+            - name: Manage Version
+              if: ${{ steps.build_package.outputs.package != 0 }}
+              run: |
+                  set +e
+                  git fetch --prune --unshallow --tags
+                  VERSION="$(cat control | grep Version | sed -n 's/Version: //gp')"
+                  #echo "::set-env name=TWEAK_VER::$VERSION"
+                  echo "TWEAK_VER=$VERSION" >> $GITHUB_ENV
+                  CUR_TAG="$(git tag -l | grep beta)"
+                  if [[ -z $CUR_TAG ]]; then
+                    #echo "::set-env name=OLD_PRE_TAG::"
+                    echo "OLD_PRE_TAG=" >> $GITHUB_ENV
+                  else
+                    #echo "::set-env name=OLD_PRE_TAG::$CUR_TAG"
+                    echo "OLD_PRE_TAG=$CUR_TAG" >> $GITHUB_ENV
+                  fi
+                  exit 0
+                  set -e
+            - name: Delete Old Prerelease (if there are any)
+              uses: dev-drprasad/delete-tag-and-release@v0.1.2
+              if: ${{ env.OLD_PRE_TAG != 0 && steps.build_package.outputs.package != 0 }}
+              with:
+                  tag_name: ${{ env.OLD_PRE_TAG }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Create Release
+              if: ${{ steps.build_package.outputs.package != 0 }}
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: v${{ env.TWEAK_VER }}-beta
+                  release_name: Beta v${{ env.TWEAK_VER }}
+                  draft: false
+                  prerelease: true
+            - name: Upload Release Asset
+              if: ${{ steps.build_package.outputs.package != 0 }}
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./packages/${{ steps.build_package.outputs.package }}
+                  asset_name: ${{ steps.build_package.outputs.package }}
+                  asset_content_type: application/vnd.debian.binary-package

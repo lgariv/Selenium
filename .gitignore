@@ -2,7 +2,9 @@
 packages
 .vscode
 .theos
+.dragon
 
 # Files
 *.deb
 .DS_Store
+*.ninja

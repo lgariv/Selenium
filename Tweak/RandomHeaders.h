@@ -2,9 +2,16 @@
 #import <WebKit/WebKit.h>
 #import <objc/runtime.h>
 
-@interface BBBulletin : NSObject
+@interface BBAction : NSObject
++(instancetype)action;
+@end
 
+@interface BBObserver : NSObject
+@end
+
+@interface BBBulletin : NSObject
 @property (nonatomic,readonly) NSString * sectionDisplayName;
+@property (nonatomic,copy) NSString * header;
 @property (nonatomic,copy) NSString * section;
 @property (nonatomic,copy) NSString * sectionID;
 @property (nonatomic,copy) NSSet * subsectionIDs;
@@ -15,36 +22,38 @@
 @property (nonatomic,copy) NSString * threadID;
 @property (nonatomic,copy) NSArray * peopleIDs;
 @property (nonatomic,copy) NSString * bulletinID;
-
+@property (nonatomic,retain) NSDate *lastInterruptDate;
+@property (assign,nonatomic) BOOL clearable;
+@property (nonatomic,retain) NSDate *date;
+@property (nonatomic,copy) BBAction *defaultAction;
+@property (nonatomic,copy) NSString *message;
+@property (nonatomic,retain) NSDate *publicationDate;
+@property (assign,nonatomic) BOOL showsMessagePreview;
+@property (nonatomic,copy) NSString *title;
++(id)bulletinWithBulletin:(id)arg1 ;
 @end
 
 @interface NCNotificationContent : NSObject
-
 @property (nonatomic,readonly) UIImage * icon;
 @property (nonatomic,copy,readonly) NSString * header;
-
 @end
 
 @interface NCNotificationRequest : NSObject
-
 @property (nonatomic,readonly) NCNotificationContent * content;
 @property (nonatomic,copy,readonly) NSString * sectionIdentifier;
 @property (nonatomic,copy,readonly) NSString * notificationIdentifier;
 @property (nonatomic,copy,readonly) NSString * threadIdentifier;
 @property (nonatomic,copy,readonly) NSString * categoryIdentifier;
 @property (nonatomic,readonly) BBBulletin * bulletin;
+@property (nonatomic,readonly) BBObserver * observer; 
 @property (nonatomic,readonly) NSDate * timestamp;
-
 @end
 
 @interface NCCoalescedNotification : NSObject
-
 @property (nonatomic,copy,readonly) NSArray * notificationRequests;
-
 @end
 
 @interface NCNotificationCombinedListViewController : UIViewController <clvc>
-
 @property (nonatomic, assign) BOOL axnAllowChanges;
 -(id)allNotificationRequests;
 -(id)axnNotificationRequests;
@@ -69,7 +78,6 @@
 -(void)clearAll;
 -(UICollectionView*)collectionView;
 -(void)_resetNotificationsHistory;
-
 @end
 
 @interface SBDashBoardCombinedListViewController : UIViewController
@@ -78,23 +86,17 @@
 @end
 
 @interface NCNotificationStore : NSObject
-
 -(NCCoalescedNotification *)coalescedNotificationForRequest:(id)arg1 ;
-
 @end
 
 @interface NCNotificationDispatcher : NSObject
-
 @property (nonatomic,retain) NCNotificationStore * notificationStore;
 -(void)destination:(id)arg1 requestsClearingNotificationRequests:(id)arg2 ;
 -(void)destination:(id)arg1 requestsClearingNotificationRequests:(id)arg2 fromDestinations:(id)arg3 ;
-
 @end
 
 @interface SBNCNotificationDispatcher : NSObject
-
 @property (nonatomic,retain) NCNotificationDispatcher * dispatcher;
-
 @end
 
 @interface SBIcon : NSObject

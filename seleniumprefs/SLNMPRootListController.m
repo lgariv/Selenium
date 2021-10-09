@@ -83,7 +83,7 @@
         self.navigationItem.rightBarButtonItem = self.respringButton;
         self.navigationItem.titleView = [[UIView alloc] initWithFrame:CGRectMake(0,0,64,40)];
 		NSString *_title = @"Selenium";
-		NSString *_subtitle = @"Version 1.1.2";
+		NSString *_subtitle = @"Version 1.2.0";
 
 		UIStackView *text = [[UIStackView alloc] initWithFrame:CGRectMake(0,0,64,16)];
 		text.axis = 1;
@@ -103,7 +103,7 @@
 
 		UILabel *subtitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,0,64,8)];
 		subtitleLabel.text = _subtitle;
-        subtitleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightUltraLight];
+        subtitleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightThin];
         subtitleLabel.textColor = [UIColor labelColor];
 		subtitleLabel.adjustsFontSizeToFitWidth = YES;
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;

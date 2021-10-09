@@ -39,4 +39,10 @@
 	<string>Tap To Change</string>
 	<key>STEPPER</key>
 	<string>Stepper</string>
+	<key>ARRIVELOCATION</key>
+	<string>Until I arrive at location</string>
+	<key>LEAVELOCATION</key>
+	<string>Until I leave location</string>
+	<key>LOCATION</key>
+	<string>Location</string>
 </dict>

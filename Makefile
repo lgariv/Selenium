@@ -2,7 +2,7 @@ INSTALL_TARGET_PROCESSES = SpringBoard
 export GO_EASY_ON_ME = 1
 
 export ARCHS = arm64 arm64e
-export TARGET = iphone:clang:13.5:11.0
+export TARGET = iphone:clang:14.4:11.0
 
 export PACKAGE_VERSION = $(THEOS_PACKAGE_BASE_VERSION)
 

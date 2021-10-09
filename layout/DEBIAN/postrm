@@ -1,9 +1,49 @@
-#removing manager.plist
+#!/usr/bin/bash
 
-ARG="remove"
-if [ "$ARG" == "$1" ]; then
+# Removing manager.plist
+
+if [ "remove" == "$1" ]; then
+    echo "[Selenium] Removing files..."
     FILE="/var/mobile/Library/Selenium/manager.plist"
     if test -f "$FILE"; then
         rm -r "/var/mobile/Library/Selenium/"
+    fi
+
+    echo "[Selenium] Restoring backup..."
+    BACKUP="/System/Library/CoreServices/SpringBoard.app/Info.plist.backup"
+    if test -f "$BACKUP"; then
+        rm /System/Library/CoreServices/SpringBoard.app/Info.plist 
+        mv /System/Library/CoreServices/SpringBoard.app/Info.plist.backup /System/Library/CoreServices/SpringBoard.app/Info.plist
+        echo "[Selenium] Backup restored!"
+    fi
+fi
+
+
+# Aborting install/upgrade if preinst extied with an error
+
+ABORT=0
+
+case "$1" in
+abort-install )
+    ABORT=1
+    #finish return
+    ;;
+abort-upgrade )
+    ABORT=1
+    #finish return
+    ;;
+failed-upgrade )
+    ABORT=1
+    #finish return
+    ;;
+esac
+
+if [ $ABORT == 1 ]; then
+    echo "[Selenium] Aborting..."
+    BACKUP="/System/Library/CoreServices/SpringBoard.app/Info.plist.backup"
+    if test -f "$BACKUP"; then
+        rm /System/Library/CoreServices/SpringBoard.app/Info.plist 
+        mv /System/Library/CoreServices/SpringBoard.app/Info.plist.backup /System/Library/CoreServices/SpringBoard.app/Info.plist
+        echo "[Selenium] An error occured during install. System modifications were reverted to original state."
     fi
 fi

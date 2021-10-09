@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <UIKit/UIControl.h>
+#import <CoreLocation/CLLocationManager.h>
+#import <Contacts/Contacts.h>
 #import "RandomHeaders.h"
 #import "AXNView.h"
 
@@ -51,18 +53,4 @@
 
 @property (nonatomic, retain) AXNView *axnView;
 
-@end
-
-@interface SBNCScreenController : NSObject
--(void)turnOnScreenForNotificationRequest:(NCNotificationRequest *)arg1 ;
-
-// %new
-+ (id)sharedInstance;
-@end
-
-@interface SBNCSoundController : NSObject
--(void)playSoundForNotificationRequest:(id)arg1 presentingDestination:(id)arg2 ;
-
-// %new
-+ (id)sharedInstance;
 @end

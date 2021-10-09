@@ -39,4 +39,10 @@
 	<string>הקש כדי לשנות</string>
 	<key>STEPPER</key>
 	<string>סטפר</string>
+	<key>ARRIVELOCATION</key>
+	<string>עד הגעתי למיקום</string>
+	<key>LEAVELOCATION</key>
+	<string>עד שאצא ממיקום</string>
+	<key>LOCATION</key>
+	<string>מיקום</string>
 </dict>

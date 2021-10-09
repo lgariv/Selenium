@@ -25,10 +25,26 @@
 			<string>Enabled</string>
 		</dict>
 		<dict>
+			<key>PostNotification</key>
+			<string>com.miwix.seleniumprefs/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.miwix.seleniumprefs</string>
+			<key>key</key>
+			<string>snooozedDeliverProminently</string>
+			<key>label</key>
+			<string>Snoozed Prominently</string>
+		</dict>
+		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Specific Time Interval (in minutes)</string>
+			<key>footerText</key>
+			<string>Requires a respring for changed to take effect.</string>
 		</dict>
 		<dict>
 			<key>PostNotification</key>
@@ -61,6 +77,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Action To Replace</string>
+			<key>footerText</key>
+			<string>Requires a respring for changed to take effect.</string>
 		</dict>
 		<dict>
 			<key>PostNotification</key>
@@ -109,6 +127,26 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>experimental</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.miwix.seleniumprefs/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.miwix.seleniumprefs</string>
+			<key>key</key>
+			<string>snoozeByLocation</string>
+			<key>label</key>
+			<string>Location Snoozing</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -140,7 +178,7 @@
 			<key>label</key>
 			<string>Follow me on Twitter</string>
 			<key>user</key>
-			<string>LGarivDev</string>
+			<string>LavieGDev</string>
 		</dict>
 		<dict>
 			<key>cellClass</key>
@@ -152,7 +190,7 @@
 			<key>icon</key>
 			<string>paypal.png</string>
 			<key>url</key>
-			<string>https://lgariv.github.io/LaVie/Donate.html</string>
+			<string>https://www.paypal.com/donate/?hosted_button_id=DSAQ8SXMGFUNU</string>
 		</dict>
 		<dict>
 			<key>cellClass</key>

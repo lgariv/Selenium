@@ -1,8 +1,7 @@
 Package: com.miwix.selenium
 Name: Selenium
-Depends: mobilesubstrate, ws.hbang.common, firmware (>= 13.0), com.bingner.plutil, sed
-Pre-Depends: com.bingner.plutil, sed
-Version: 1.2.0
+Depends: mobilesubstrate, ws.hbang.common, firmware (>= 13.0)
+Version: 1.2.1
 Architecture: iphoneos-arm
 Description: Snooze notifications. Focus on what matters⏱
 Maintainer: Lavie Gariv

@@ -1,41 +1,41 @@
-#!/usr/bin/bash
+#!/bin/bash
 
-echo "[Selenium] Setting permissions..."
+# echo "[Selenium] Setting permissions..."
 
-FILE="/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"
-if test -f "$FILE"; then
-    echo "[Selenium] Icon..."
-    chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"
-fi
+# FILE="/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"
+# if test -f "$FILE"; then
+#     echo "[Selenium] Icon..."
+#     chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/Assets/icon.PNG"
+# fi
 
-FILE="/Library/Application Support/SeleniumExtra.bundle/de.lproj/Localizable.strings"
-if test -f "$FILE"; then
-    echo "[Selenium] German..."
-    chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/de.lproj/Localizable.strings"
-fi
+# FILE="/Library/Application Support/SeleniumExtra.bundle/de.lproj/Localizable.strings"
+# if test -f "$FILE"; then
+#     echo "[Selenium] German..."
+#     chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/de.lproj/Localizable.strings"
+# fi
 
-FILE="/Library/Application Support/SeleniumExtra.bundle/en.lproj/Localizable.strings"
-if test -f "$FILE"; then
-    echo "[Selenium] English..."
-    chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/en.lproj/Localizable.strings"
-fi
+# FILE="/Library/Application Support/SeleniumExtra.bundle/en.lproj/Localizable.strings"
+# if test -f "$FILE"; then
+#     echo "[Selenium] English..."
+#     chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/en.lproj/Localizable.strings"
+# fi
 
-FILE="/Library/Application Support/SeleniumExtra.bundle/fr.lproj/Localizable.strings"
-if test -f "$FILE"; then
-    echo "[Selenium] French..."
-    chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/fr.lproj/Localizable.strings"
-fi
+# FILE="/Library/Application Support/SeleniumExtra.bundle/fr.lproj/Localizable.strings"
+# if test -f "$FILE"; then
+#     echo "[Selenium] French..."
+#     chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/fr.lproj/Localizable.strings"
+# fi
 
-FILE="/Library/Application Support/SeleniumExtra.bundle/he.lproj/Localizable.strings"
-if test -f "$FILE"; then
-    echo "[Selenium] Hebrew..."
-    chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/he.lproj/Localizable.strings"
-fi
+# FILE="/Library/Application Support/SeleniumExtra.bundle/he.lproj/Localizable.strings"
+# if test -f "$FILE"; then
+#     echo "[Selenium] Hebrew..."
+#     chmod 0644 "/Library/Application Support/SeleniumExtra.bundle/he.lproj/Localizable.strings"
+# fi
 
-FILE="/System/Library/CoreServices/SpringBoard.app/Info.plist"
-if test -f "$FILE"; then
-    echo "[Selenium] SpringBoard..."
-    chmod 0644 "/System/Library/CoreServices/SpringBoard.app/Info.plist"
-fi
+# FILE="/System/Library/CoreServices/SpringBoard.app/Info.plist"
+# if test -f "$FILE"; then
+#     echo "[Selenium] SpringBoard..."
+#     chmod 0644 "/System/Library/CoreServices/SpringBoard.app/Info.plist"
+# fi
 
-echo "[Selenium] Permissions set!"
+# echo "[Selenium] Permissions set!"

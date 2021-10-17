@@ -50,7 +50,7 @@ BOOL snooozedDeliverProminently;
 static NSInteger segmentInterval;
 static NSInteger chosenButton;
 static BOOL deliverQuietlyWhilePlaying;
-static BOOL snoozeByLocationEnabled;
+static BOOL snoozeByLocationEnabled = NO;
 PCSimpleTimer *lastTimer;
 
 NSDictionary *prefs = nil;
@@ -2764,17 +2764,17 @@ static void loadPrefs() {
 		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
 		chosenButton = [[prefs objectForKey:@"chosenButton"] intValue];
         deliverQuietlyWhilePlaying = [[prefs objectForKey:@"deliverQuietlyWhilePlaying"] boolValue];
-        snoozeByLocationEnabled = [[prefs objectForKey:@"snoozeByLocation"] boolValue];
+        // snoozeByLocationEnabled = [[prefs objectForKey:@"snoozeByLocation"] boolValue];
         if (deliverQuietlyWhilePlaying == YES) %init(deliverQuietly);
-        if (snoozeByLocationEnabled == YES) {
-            NSMutableArray *entries = [config[@"entries"] mutableCopy];
-            for (NSMutableDictionary *entry in entries) {
-                if ([entry[@"timeStamp"] doubleValue] == -2) {
-                    NCNotificationRequest *expiredReq = entry[@"id"];
-                    processEntry(expiredReq, 0, nil, nil, nil);
-                }
-            }
-        }
+        // if (snoozeByLocationEnabled != YES) {
+        //     NSMutableArray *entries = [config[@"entries"] mutableCopy];
+        //     for (NSMutableDictionary *entry in entries) {
+        //         if ([entry[@"timeStamp"] doubleValue] == -2) {
+        //             NCNotificationRequest *expiredReq = entry[@"id"];
+        //             processEntry(expiredReq, 0, nil, nil, nil);
+        //         }
+        //     }
+        // }
 	}
 }
 

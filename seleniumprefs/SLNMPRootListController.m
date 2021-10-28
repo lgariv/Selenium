@@ -83,7 +83,7 @@
         self.navigationItem.rightBarButtonItem = self.respringButton;
         self.navigationItem.titleView = [[UIView alloc] initWithFrame:CGRectMake(0,0,64,40)];
 		NSString *_title = @"Selenium";
-		NSString *_subtitle = @"Version 1.2.0";
+		NSString *_subtitle = @"Version 1.3.0";
 
 		UIStackView *text = [[UIStackView alloc] initWithFrame:CGRectMake(0,0,64,16)];
 		text.axis = 1;

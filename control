@@ -1,7 +1,7 @@
 Package: com.miwix.selenium
 Name: Selenium
 Depends: mobilesubstrate, ws.hbang.common, firmware (>= 13.0)
-Version: 1.2.1
+Version: 1.3.0
 Architecture: iphoneos-arm
 Description: Snooze notifications. Focus on what matters⏱
 Maintainer: Lavie Gariv

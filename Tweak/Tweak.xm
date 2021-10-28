@@ -50,6 +50,7 @@ BOOL snooozedDeliverProminently;
 static NSInteger segmentInterval;
 static NSInteger chosenButton;
 static BOOL deliverQuietlyWhilePlaying;
+static BOOL newMenu;
 static BOOL snoozeByLocationEnabled = NO;
 PCSimpleTimer *lastTimer;
 
@@ -475,6 +476,7 @@ static void processEntry(NCNotificationRequest *request, double interval, NSDate
 @property (strong, nonatomic) UIWindow *window;
 -(UIImage *)imageWithView:(UIView *)view;
 -(NSDate *)getStepperValue:(NSNumber *)number;
+-(void)specificTimeController:(id)sender;
 @end
 
 #pragma mark DND start
@@ -1196,224 +1198,229 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
             processEntry(requestToProcess, -2, nil, nil, nil);
         }
     }]];*/
-    // new menu
-    // if (snoozeByLocationEnabled == NO) {
-    //     //NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
-    //         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    //         CGFloat margin = 4.0F;
+    #pragma mark new menu
+    if (snoozeByLocationEnabled == NO && newMenu == YES) {
+        //NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
+            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+            CGFloat margin = 4.0F;
 
-    //         _UIInterfaceActionGroupHeaderScrollView *alertScrollView;
-    //         for (id view in [(_UIAlertControllerInterfaceActionGroupView*)[[[alertController view] subviews][0] subviews][0] subviews]) {
-    //             if ([view isKindOfClass:[%c(UIView) class]]) {
-    //                 for (id view2 in [view subviews]) {
-    //                     if ([view2 isKindOfClass:[%c(_UIInterfaceActionGroupHeaderScrollView) class]]) {
-    //                         alertScrollView = view2;
-    //                         NSLog(@"[Selenium] Scroll View Found!!!");
-    //                     }
-    //                 }
+            _UIInterfaceActionGroupHeaderScrollView *alertScrollView;
+            for (id view in [(_UIAlertControllerInterfaceActionGroupView*)[[[alertController view] subviews][0] subviews][0] subviews]) {
+                if ([view isKindOfClass:[%c(UIView) class]]) {
+                    for (id view2 in [view subviews]) {
+                        if ([view2 isKindOfClass:[%c(_UIInterfaceActionGroupHeaderScrollView) class]]) {
+                            alertScrollView = view2;
+                            NSLog(@"[Selenium] Scroll View Found!!!");
+                        }
+                    }
 
-    //             }
-    //         }
-    //         [alertScrollView setClipsToBounds:YES];
-    //         [alertScrollView setUserInteractionEnabled:YES];
+                }
+            }
+            [alertScrollView setClipsToBounds:YES];
+            [alertScrollView setUserInteractionEnabled:YES];
 
-    //         [[alertController view] setClipsToBounds:YES];
-    //         UIView *containerView = [[UIView alloc] initWithFrame:CGRectMake(0,0,0,0)];
-    //         [alertScrollView addSubview:containerView];
-    //         [containerView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    //         [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:containerView attribute:NSLayoutAttributeWidth multiplier:1.0 constant:0]];
-    //         [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:containerView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0]];
-    //         [containerView setHidden:YES];
+            [[alertController view] setClipsToBounds:YES];
+            UIView *containerView = [[UIView alloc] initWithFrame:CGRectMake(0,0,0,0)];
+            [alertScrollView addSubview:containerView];
+            [containerView setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:containerView attribute:NSLayoutAttributeWidth multiplier:1.0 constant:0]];
+            [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:containerView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0]];
+            [containerView setHidden:YES];
             
-    //         [alertController setTitle:SNOOZEF];
+            [alertController setTitle:SNOOZEF];
 
-    //         BOOL finished = NO;
-    //         UIImageView *cellImage = nil;
-    //         double widthInPoints = nil;
-    //         double heightInPoints = nil;
-    //         SButton *button2 = nil;
-    //         //setup:
-    //         //if (!cellImage) {
-    //             cellImage = [[UIImageView alloc] init];
-    //             cellImage.image = [self imageWithView:cellToCapture];
-    //             widthInPoints = cellImage.image.size.width;
-    //             heightInPoints = cellImage.image.size.height;
-    //             [cellImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
-    //             cellImage.contentMode = UIViewContentModeScaleAspectFit;
-    //         //}
+            BOOL finished = NO;
+            UIImageView *cellImage = nil;
+            double widthInPoints = nil;
+            double heightInPoints = nil;
+            SButton *button2 = nil;
+            //setup:
+            //if (!cellImage) {
+                cellImage = [[UIImageView alloc] init];
+                cellImage.image = [self imageWithView:cellToCapture];
+                widthInPoints = cellImage.image.size.width;
+                heightInPoints = cellImage.image.size.height;
+                [cellImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+                cellImage.contentMode = UIViewContentModeScaleAspectFit;
+            //}
 
-    //         /*if (!button2) */button2 = [SButton buttonWithType:UIButtonTypeSystem];
+            /*if (!button2) */button2 = [SButton buttonWithType:UIButtonTypeSystem];
 
-    //         if (grouped) {
-    //         button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints);
-    //             [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-20, button2.bounds.size.height)];
-    //         } else {
-    //         button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints);
-    //             [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-20, button2.bounds.size.height)];
-    //         }
+            if (grouped) {
+            button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints);
+                [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-20, button2.bounds.size.height)];
+            } else {
+            button2.frame = CGRectMake(10 + alertController.view.bounds.origin.x , alertController.view.bounds.origin.y+50, alertController.view.frame.size.width - margin * 4.0F - 20, heightInPoints);
+                [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-20, button2.bounds.size.height)];
+            }
 
-    //         [button2 setBackgroundColor:[UIColor systemGrayColor]];
-    //         [button2 setAlpha:0.1f];
-    //         button2.layer.cornerRadius = 12.5;
+            [button2 setBackgroundColor:[UIColor systemGrayColor]];
+            [button2 setAlpha:0.1f];
+            button2.layer.cornerRadius = 12.5;
 
-    //         /*if (![button2 superview]) */[alertScrollView addSubview:button2];
-    //         /*if (![cellImage superview]) */[alertScrollView addSubview:cellImage];
-    //             [button2 setTranslatesAutoresizingMaskIntoConstraints:NO];
-    //             [cellImage setTranslatesAutoresizingMaskIntoConstraints:NO];
-    //             //[button2.topAnchor constraintEqualToAnchor:containerView.topAnchor constant:50].active = YES;
-    //             [button2.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
-    //             [button2.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
-    //             //[button2.heightAnchor constraintEqualToAnchor:cellImage.heightAnchor constant:grouped ? 30 : 15].active = YES;
-    //             [cellImage.leadingAnchor constraintEqualToAnchor:button2.leadingAnchor constant:10].active = YES;
-    //             [cellImage.topAnchor constraintEqualToAnchor:button2.topAnchor constant:10].active = YES;
-    //             //[cellImage.heightAnchor constraintEqualToAnchor:cellImage.heightAnchor constant:-10].active = YES;
-    //             //[button2.heightAnchor constraintEqualToAnchor:nil constant:heightInPoints+10].active = YES;
-    //             //[button2.widthAnchor constraintEqualToAnchor:nil constant:widthInPoints+10].active = YES;
-    //             //[cellImage.topAnchor constraintEqualToAnchor:button2.topAnchor constant:10].active = YES;
-    //             [cellImage.centerYAnchor constraintEqualToAnchor:button2.centerYAnchor constant:0].active = YES;
-    //             [cellImage.centerXAnchor constraintEqualToAnchor:button2.centerXAnchor constant:0].active = YES;
-    //         cellImage.center = button2.center;
+            /*if (![button2 superview]) */[alertScrollView addSubview:button2];
+            /*if (![cellImage superview]) */[alertScrollView addSubview:cellImage];
+                [button2 setTranslatesAutoresizingMaskIntoConstraints:NO];
+                [cellImage setTranslatesAutoresizingMaskIntoConstraints:NO];
+                //[button2.topAnchor constraintEqualToAnchor:containerView.topAnchor constant:50].active = YES;
+                [button2.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
+                [button2.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
+                //[button2.heightAnchor constraintEqualToAnchor:cellImage.heightAnchor constant:grouped ? 30 : 15].active = YES;
+                [cellImage.leadingAnchor constraintEqualToAnchor:button2.leadingAnchor constant:10].active = YES;
+                [cellImage.topAnchor constraintEqualToAnchor:button2.topAnchor constant:10].active = YES;
+                //[cellImage.heightAnchor constraintEqualToAnchor:cellImage.heightAnchor constant:-10].active = YES;
+                //[button2.heightAnchor constraintEqualToAnchor:nil constant:heightInPoints+10].active = YES;
+                //[button2.widthAnchor constraintEqualToAnchor:nil constant:widthInPoints+10].active = YES;
+                //[cellImage.topAnchor constraintEqualToAnchor:button2.topAnchor constant:10].active = YES;
+                [cellImage.centerYAnchor constraintEqualToAnchor:button2.centerYAnchor constant:0].active = YES;
+                [cellImage.centerXAnchor constraintEqualToAnchor:button2.centerXAnchor constant:0].active = YES;
+            cellImage.center = button2.center;
 
-    //         #pragma mark stepper "cell"
-    //         UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + containerView.bounds.origin.x , containerView.bounds.origin.y+60+(heightInPoints+10), [alertController view].bounds.size.width - margin * 4.0F - 20, 50)];
-    //         [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
-    //         [stepperFrame setAlpha:0.1];
-    //         stepperFrame.layer.cornerRadius = 12.5;
-    //         UIHoursStepper *stepper = [[UIHoursStepper alloc] init];
-    //         stepper.minimumValue = 1; //15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 8h, 12h
-    //         stepper.maximumValue = 10;
-    //         [stepper addTarget:self action:@selector(valueChanged:) forControlEvents:UIControlEventValueChanged];
-    //         [alertScrollView addSubview:stepperFrame];
-    //         [stepperFrame setTranslatesAutoresizingMaskIntoConstraints:YES];
-    //         [stepperFrame.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
-    //         [stepperFrame.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
-    //         [stepperFrame.topAnchor constraintEqualToAnchor:button2.bottomAnchor constant:10].active = YES;
-    //         [stepperFrame.heightAnchor constraintEqualToAnchor:nil constant:50].active = YES;
-    //         //[alertScrollView addSubview:stepper];
-    //         CGFloat stepperMargin = CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame);
-    //         UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
-    //         stackView.axis = UILayoutConstraintAxisHorizontal;
-    //         stackView.center = stepperFrame.center;
-    //         stackView.distribution = UIStackViewDistributionEqualSpacing;
-    //         stackView.alignment = UIStackViewAlignmentCenter;
-    //         CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
-    //         CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
-    //         //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
-    //         CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
-    //         UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
-    //         UILabel *stepperUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperLabel.frame.origin.x+stepperLabel.frame.size.height, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
-    //         //[alertScrollView addSubview:stepperLabel];
-    //         if ([[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"]) {
-    //             stepperLabel.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"];
-    //             stepper.value = [(NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperValue"] doubleValue];
-    //         } else {
-    //             stepperLabel.text = fMINUTES;
-    //             stepper.value = 1;
-    //         }
-    //         //[stepperLabel setFont:[UIFont boldSystemFontOfSize:17.0f]];
-    //         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    //         formatter.formatterBehavior = NSDateFormatterBehavior10_4;
-    //         formatter.dateStyle = NSDateFormatterShortStyle;
-    //         formatter.timeStyle = NSDateFormatterShortStyle;
-    //         [formatter setDateFormat:@"HH:mm"];
-    //         NSString *result = [formatter stringForObjectValue:[self getStepperValue:[NSNumber numberWithFloat:stepper.value]]];
-    //         NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
-    //         [parts removeObject:parts[0]];
-    //         NSString *UNTIL = [parts componentsJoinedByString:@" "];
-    //         UIFont *systemFont = [UIFont systemFontOfSize:13.0f];
-    //         NSDictionary *attribsSnoozedForUntilLabel = @{
-    //                         NSForegroundColorAttributeName:[UIColor systemBlueColor],
-    //                         NSFontAttributeName:systemFont
-    //                         };
-    //         NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedForUntilLabel];
-    //         stepperUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+            #pragma mark stepper "cell"
+            UIView *stepperFrame = [[UIView alloc] initWithFrame:CGRectMake(10 + containerView.bounds.origin.x , containerView.bounds.origin.y+60+(heightInPoints+10), [alertController view].bounds.size.width - margin * 4.0F - 20, 50)];
+            [stepperFrame setBackgroundColor:[UIColor systemGrayColor]];
+            [stepperFrame setAlpha:0.1];
+            stepperFrame.layer.cornerRadius = 12.5;
+            UIHoursStepper *stepper = [[UIHoursStepper alloc] init];
+            stepper.minimumValue = 1; //15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 8h, 12h
+            stepper.maximumValue = 10;
+            [stepper addTarget:self action:@selector(valueChanged:) forControlEvents:UIControlEventValueChanged];
+            [alertScrollView addSubview:stepperFrame];
+            [stepperFrame setTranslatesAutoresizingMaskIntoConstraints:YES];
+            [stepperFrame.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
+            [stepperFrame.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
+            [stepperFrame.topAnchor constraintEqualToAnchor:button2.bottomAnchor constant:10].active = YES;
+            [stepperFrame.heightAnchor constraintEqualToAnchor:nil constant:50].active = YES;
+            //[alertScrollView addSubview:stepper];
+            CGFloat stepperMargin = CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame);
+            UIStackView *stackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
+            stackView.axis = UILayoutConstraintAxisHorizontal;
+            stackView.center = stepperFrame.center;
+            stackView.distribution = UIStackViewDistributionEqualSpacing;
+            stackView.alignment = UIStackViewAlignmentCenter;
+            CGFloat stepperX = CGRectGetWidth(stepperFrame.frame)-CGRectGetWidth(stepper.frame)-stepperMargin;
+            CGFloat stepperY = stepperFrame.frame.origin.y+(CGRectGetHeight(stepperFrame.frame)-CGRectGetHeight(stepper.frame)-stepperMargin);
+            //stepper.frame = CGRectMake(stepperX+stepperMargin, stepperY, 0, 0);
+            CGFloat stepperLabelY = (CGRectGetHeight(stepperFrame.frame)/2)-(CGRectGetHeight(stepper.frame)/2);
+            UILabel *stepperLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperFrame.frame.origin.x+stepperMargin, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
+            UILabel *stepperUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(stepperLabel.frame.origin.x+stepperLabel.frame.size.height, stepperFrame.frame.origin.y-stepperLabelY*2, stepperFrame.frame.size.width-stepperMargin, stepperFrame.frame.size.height-(stepperLabelY-stepperFrame.frame.size.height))];
+            //[alertScrollView addSubview:stepperLabel];
+            if ([[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"]) {
+                stepperLabel.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperLabelText"];
+                stepper.value = [(NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"lastStepperValue"] doubleValue];
+            } else {
+                stepperLabel.text = fMINUTES;
+                stepper.value = 1;
+            }
+            //[stepperLabel setFont:[UIFont boldSystemFontOfSize:17.0f]];
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+            formatter.dateStyle = NSDateFormatterShortStyle;
+            formatter.timeStyle = NSDateFormatterShortStyle;
+            [formatter setDateFormat:@"HH:mm"];
+            NSString *result = [formatter stringForObjectValue:[self getStepperValue:[NSNumber numberWithFloat:stepper.value]]];
+            NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+            [parts removeObject:parts[0]];
+            NSString *UNTIL = [parts componentsJoinedByString:@" "];
+            UIFont *systemFont = [UIFont systemFontOfSize:13.0f];
+            NSDictionary *attribsSnoozedForUntilLabel = @{
+                            NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                            NSFontAttributeName:systemFont
+                            };
+            NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedForUntilLabel];
+            stepperUntilLabel.attributedText = attributedSnoozedForUntilLabel;
 
-    //         UIStackView *labelStackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
-    //         labelStackView.axis = UILayoutConstraintAxisVertical;
-    //         labelStackView.center = stepperFrame.center;
-    //         labelStackView.distribution = UIStackViewDistributionEqualSpacing;
-    //         labelStackView.alignment = UIStackViewAlignmentLeading;
-    //         [labelStackView addArrangedSubview:stepperLabel];
-    //         [labelStackView addArrangedSubview:stepperUntilLabel];
-    //         stepper.stepperLabel = labelStackView;
+            UIStackView *labelStackView = [[UIStackView alloc] initWithFrame:CGRectMake(0, 0, stepperFrame.frame.size.width - stepperMargin, stepperFrame.frame.size.height)];
+            labelStackView.axis = UILayoutConstraintAxisVertical;
+            labelStackView.center = stepperFrame.center;
+            labelStackView.distribution = UIStackViewDistributionEqualSpacing;
+            labelStackView.alignment = UIStackViewAlignmentLeading;
+            [labelStackView addArrangedSubview:stepperLabel];
+            [labelStackView addArrangedSubview:stepperUntilLabel];
+            stepper.stepperLabel = labelStackView;
 
-    //         [stackView addArrangedSubview:labelStackView];
-    //         [stackView addArrangedSubview:stepper];
-    //         [alertScrollView addSubview:stackView];
+            [stackView addArrangedSubview:labelStackView];
+            [stackView addArrangedSubview:stepper];
+            [alertScrollView addSubview:stackView];
 
-    //         SButton *snoozeButton = [SButton buttonWithType:UIButtonTypeSystem];
-    //         // snoozeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + (/*picker*/90 - 2) + 50, [alertController view].bounds.size.width - margin * 4.0F - 20, 50);
-    //         [snoozeButton setBackgroundColor:[UIColor systemBlueColor]];
-    //         [snoozeButton setTitle:SNOOZE forState:UIControlStateNormal];
-    //         snoozeButton.titleLabel.font = [UIFont systemFontOfSize:19];
-    //         [snoozeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    //         snoozeButton.request = requestToProcess;
-    //         snoozeButton.controllerToDismiss = alertController;
-    //         snoozeButton.cell = cellToCapture;
-    //         snoozeButton.grouped = grouped;
-    //         snoozeButton.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
-    //         snoozeButton.stepper = stepper;
-    //         [snoozeButton addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
-    //         [snoozeButton addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
-    //         [snoozeButton addTarget:self action:@selector(stepperButtonUp:) forControlEvents:UIControlEventTouchUpInside];
-    //         snoozeButton.layer.cornerRadius = 10.5;
+            SButton *snoozeButton = [SButton buttonWithType:UIButtonTypeSystem];
+            // snoozeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + (/*picker*/90 - 2) + 50, [alertController view].bounds.size.width - margin * 4.0F - 20, 50);
+            [snoozeButton setBackgroundColor:[UIColor systemBlueColor]];
+            [snoozeButton setTitle:SNOOZE forState:UIControlStateNormal];
+            snoozeButton.titleLabel.font = [UIFont systemFontOfSize:19];
+            [snoozeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+            snoozeButton.request = requestToProcess;
+            snoozeButton.controllerToDismiss = alertController;
+            snoozeButton.cell = cellToCapture;
+            snoozeButton.grouped = grouped;
+            snoozeButton.stepperDate = [self performSelector:@selector(getStepperValue:) withObject:[NSNumber numberWithFloat:stepper.value]];
+            snoozeButton.stepper = stepper;
+            [snoozeButton addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
+            [snoozeButton addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
+            [snoozeButton addTarget:self action:@selector(stepperButtonUp:) forControlEvents:UIControlEventTouchUpInside];
+            snoozeButton.layer.cornerRadius = 10.5;
 
-    //         SButton *sTimeButton = [SButton buttonWithType:UIButtonTypeSystem];
-    //         [sTimeButton setBackgroundColor:[[UIColor systemBlueColor] colorWithAlphaComponent:38.0f/255.0f]];
-    //         [sTimeButton setTitle:sTIME forState:UIControlStateNormal];
-    //         [sTimeButton setImage:[UIImage systemImageNamed:@"timer"] forState:UIControlStateNormal];
-    //         // [sTimeButton setImage:[UIImage systemImageNamed:@"stopwatch.fill"] forState:UIControlStateNormal];
-    //         sTimeButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
-    //         CGSize sizeOfImage = [sTIME sizeWithFont:[UIFont systemFontOfSize:14]];
-    //         sTimeButton.imageEdgeInsets = UIEdgeInsetsMake(4, 0, 4, 0);
-    //         sTimeButton.titleLabel.font = [UIFont systemFontOfSize:14];
-    //         [sTimeButton setTitleColor:[UIColor systemBlueColor] forState:UIControlStateNormal];
-    //         sTimeButton.layer.cornerRadius = 10.5;
+            SButton *sTimeButton = [SButton buttonWithType:UIButtonTypeSystem];
+            [sTimeButton setBackgroundColor:[[UIColor systemBlueColor] colorWithAlphaComponent:38.0f/255.0f]];
+            [sTimeButton setTitle:sTIME forState:UIControlStateNormal];
+            [sTimeButton setImage:[UIImage systemImageNamed:@"timer"] forState:UIControlStateNormal];
+            // [sTimeButton setImage:[UIImage systemImageNamed:@"stopwatch.fill"] forState:UIControlStateNormal];
+            sTimeButton.controllerToDismiss = alertController;
+            sTimeButton.request = requestToProcess;
+            sTimeButton.grouped = grouped;
+            sTimeButton.cell = cellToCapture;
+            [sTimeButton addTarget:self action:@selector(specificTimeController:) forControlEvents:UIControlEventTouchUpInside];
+            sTimeButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
+            CGSize sizeOfImage = [sTIME sizeWithFont:[UIFont systemFontOfSize:14]];
+            sTimeButton.imageEdgeInsets = UIEdgeInsetsMake(4, 0, 4, 0);
+            sTimeButton.titleLabel.font = [UIFont systemFontOfSize:14];
+            [sTimeButton setTitleColor:[UIColor systemBlueColor] forState:UIControlStateNormal];
+            sTimeButton.layer.cornerRadius = 10.5;
 
-    //         [alertScrollView addSubview:snoozeButton];
-    //         [alertScrollView addSubview:sTimeButton];
+            [alertScrollView addSubview:snoozeButton];
+            [alertScrollView addSubview:sTimeButton];
 
-    //         snoozeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + /*picker*/70 + stepperFrame.frame.size.height + button2.frame.size.height, [alertController view].bounds.size.width - margin * 4.0F - 20, 50);
-    //         [snoozeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
-    //         [snoozeButton.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
-    //         [snoozeButton.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
-    //         [snoozeButton.topAnchor constraintEqualToAnchor:stepperFrame.bottomAnchor constant:10].active = YES;
-    //         [snoozeButton.heightAnchor constraintEqualToAnchor:nil constant:50].active = YES;
+            snoozeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + /*picker*/70 + stepperFrame.frame.size.height + button2.frame.size.height, [alertController view].bounds.size.width - margin * 4.0F - 20, 50);
+            [snoozeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [snoozeButton.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:10].active = YES;
+            [snoozeButton.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-10].active = YES;
+            [snoozeButton.topAnchor constraintEqualToAnchor:stepperFrame.bottomAnchor constant:10].active = YES;
+            [snoozeButton.heightAnchor constraintEqualToAnchor:nil constant:50].active = YES;
 
-    //         sTimeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + /*picker*/70 + stepperFrame.frame.size.height + button2.frame.size.height, [alertController view].bounds.size.width - margin * 4.0F - 20, 60);
-    //         [sTimeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
-    //         [sTimeButton.centerXAnchor constraintEqualToAnchor:containerView.centerXAnchor constant:0].active = YES;
-    //         [sTimeButton.topAnchor constraintEqualToAnchor:snoozeButton.bottomAnchor constant:8].active = YES;
-    //         // [sTimeButton.heightAnchor constraintEqualToAnchor:nil constant:25].active = YES;
-    //         [NSLayoutConstraint constraintWithItem:sTimeButton
-    //                                      attribute:NSLayoutAttributeHeight
-    //                                      relatedBy:NSLayoutRelationEqual 
-    //                                         toItem:snoozeButton
-    //                                      attribute:NSLayoutAttributeHeight
-    //                                     multiplier:0.6
-    //                                       constant:0].active = YES;
-    //         sTimeButton.contentEdgeInsets = UIEdgeInsetsMake(0.0f, 5.25f, 0.0f, 10.5f);
+            sTimeButton.frame = CGRectMake(10 + containerView.bounds.origin.x, containerView.bounds.origin.y + /*picker*/70 + stepperFrame.frame.size.height + button2.frame.size.height, [alertController view].bounds.size.width - margin * 4.0F - 20, 60);
+            [sTimeButton setTranslatesAutoresizingMaskIntoConstraints:NO];
+            [sTimeButton.centerXAnchor constraintEqualToAnchor:containerView.centerXAnchor constant:0].active = YES;
+            [sTimeButton.topAnchor constraintEqualToAnchor:snoozeButton.bottomAnchor constant:8].active = YES;
+            // [sTimeButton.heightAnchor constraintEqualToAnchor:nil constant:25].active = YES;
+            [NSLayoutConstraint constraintWithItem:sTimeButton
+                                         attribute:NSLayoutAttributeHeight
+                                         relatedBy:NSLayoutRelationEqual 
+                                            toItem:snoozeButton
+                                         attribute:NSLayoutAttributeHeight
+                                        multiplier:0.6
+                                          constant:0].active = YES;
+            sTimeButton.contentEdgeInsets = UIEdgeInsetsMake(0.0f, 5.25f, 0.0f, 10.5f);
 
-    //         //UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
-    //         //popoverController.sourceView = [alertController view];
-    //         //popoverController.sourceRect = [[alertController view] bounds];
+            //UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
+            //popoverController.sourceView = [alertController view];
+            //popoverController.sourceRect = [[alertController view] bounds];
 
-    //         [alertScrollView setContentSize:CGSizeMake(alertScrollView.superview.bounds.size.width, (snoozeButton.frame.origin.y-button2.frame.origin.y)+snoozeButton.frame.size.height+40)];
-    //         if ([alertController view].bounds.size.height > [alertController view].bounds.size.width)
-    //         [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeBottomMargin relatedBy:NSLayoutRelationEqual toItem:snoozeButton attribute:NSLayoutAttributeBottom multiplier:1.0 constant:75+38]];
-    //         else
-    //         [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:alertScrollView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:[alertController view] attribute:NSLayoutAttributeHeight multiplier:1.0 constant:-25/*([[UIScreen mainScreen] bounds].size.height)-25*/]];
+            [alertScrollView setContentSize:CGSizeMake(alertScrollView.superview.bounds.size.width, (snoozeButton.frame.origin.y-button2.frame.origin.y)+snoozeButton.frame.size.height+40)];
+            if ([alertController view].bounds.size.height > [alertController view].bounds.size.width)
+            [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeBottomMargin relatedBy:NSLayoutRelationEqual toItem:snoozeButton attribute:NSLayoutAttributeBottom multiplier:1.0 constant:75+38]];
+            else
+            [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:alertScrollView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:[alertController view] attribute:NSLayoutAttributeHeight multiplier:1.0 constant:-25/*([[UIScreen mainScreen] bounds].size.height)-25*/]];
 
-    //         //if (!finished) {
-    //             finished = YES;
-    //         //    goto setup;
-    //         //} else {
-    //             [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
-    //             [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
-    //         //}
+            //if (!finished) {
+                finished = YES;
+            //    goto setup;
+            //} else {
+                [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+                [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+            //}
 
-    //         sTimeButton.layer.cornerRadius = sTimeButton.layer.bounds.size.height / 4;
-    // } else {
+            sTimeButton.layer.cornerRadius = sTimeButton.layer.bounds.size.height / 4;
+    } else {
         if ([CLLocationManager locationServicesEnabled] && [CLLocationManager authorizationStatus] != 2 && snoozeByLocationEnabled == YES) [alert addAction:[UIAlertAction actionWithTitle:ARRIVELOCATION style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
                 /*NSBundle *bundle = [NSBundle bundleWithURL:[%c(LSApplicationProxy) applicationProxyForIdentifier:@"com.apple.reminders"].bundleURL];
                 [bundle load];
@@ -1921,7 +1928,193 @@ static bool shouldStopRequest(NCNotificationRequest *request) {
 
         [alert addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
         [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
-    // } // new menu end
+    }
+    #pragma mark new menu end
+}
+
+%new
+-(void)specificTimeController:(id)sender {
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"SLMEnableLock" object:self];
+
+    SButton *senderFix = sender;
+    [senderFix.controllerToDismiss dismissViewControllerAnimated:YES completion:nil];
+
+    NCNotificationRequest *requestToProcess = senderFix.request;
+    NCNotificationListCell *cellToCapture = senderFix.cell;
+    BOOL grouped = senderFix.grouped;
+
+    //NCNotificationManagementAlertController *alertController = [[%c(NCNotificationManagementAlertController) alloc] initWithRequest:requestToProcess withPresentingView:nil settingsDelegate:nil];
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [alertController setTitle:SNOOZEF];
+    NSLocale *locale = [NSLocale currentLocale];
+    UIDatePicker *picker = [[UIDatePicker alloc] init];
+    picker.locale = locale; 
+    [picker setDatePickerMode:UIDatePickerModeDateAndTime];
+    [picker setMinuteInterval:segmentInterval];
+    #pragma mark setMinimumDate fix
+    NSDateFormatter *testFormatter = [[NSDateFormatter alloc] init];
+    testFormatter.formatterBehavior = NSDateFormatterBehavior10_4;
+    testFormatter.dateStyle = NSDateFormatterShortStyle;
+    testFormatter.timeStyle = NSDateFormatterShortStyle;
+    [testFormatter setDateFormat:@"HH"];
+    NSString *stringResult = [testFormatter stringForObjectValue:[NSDate date]];
+    NSString *stringResultStart = [NSString stringWithFormat:@"%@:00:00",stringResult];
+    [testFormatter setDateFormat:@"Z"];
+    NSString *stringResultZone = [testFormatter stringForObjectValue:[NSDate date]];
+    [testFormatter setDateFormat:@"yyyy-MM-dd'T'"];
+    NSString *stringResultRest = [testFormatter stringForObjectValue:[NSDate date]];
+    [testFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZ"];
+    NSString *stringResultLoopStart = [NSString stringWithFormat:@"%@%@%@",stringResultRest,stringResultStart,stringResultZone];
+    NSDate *minimumDate = [testFormatter dateFromString:stringResultLoopStart];
+    for (char i=0; i<((60/segmentInterval)+1); i++) {
+        if ([[NSDate date] timeIntervalSinceDate:minimumDate] < 0) {
+            break;
+        } else {
+            minimumDate = [NSDate dateWithTimeInterval:(segmentInterval*60) sinceDate:minimumDate];
+        }
+    }
+    [picker setMinimumDate:minimumDate/*[NSDate dateWithTimeInterval:300 sinceDate:[NSDate date]]*/];
+    [picker setMaximumDate:[NSDate dateWithTimeInterval:604800 sinceDate:requestToProcess.timestamp]];
+    [[alertController view] addSubview:picker];
+
+    SButton *button = [SButton buttonWithType:UIButtonTypeSystem];
+    CGFloat margin = 4.0F;
+    button.frame = CGRectMake(10 + [alertController view].bounds.origin.x, [alertController view].bounds.origin.y + ((picker.frame.size.height+40) - 2) + 50, [alertController view].frame.size.width - margin * 4.0F - 20, 50);
+    [button setBackgroundColor:[UIColor systemBlueColor]];
+    [button setTitle:SNOOZE forState:UIControlStateNormal];
+    button.titleLabel.font = [UIFont systemFontOfSize:19];
+    [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    button.request = requestToProcess;
+    button.controllerToDismiss = alertController;
+    button.pickerDate = [self performSelector:@selector(getDatePickerValue:) withObject:picker];
+    button.datePicker = picker;
+    button.cell = cellToCapture;
+    button.grouped = grouped;
+    [button addTarget:self action:@selector(buttonDown:) forControlEvents:UIControlEventTouchDown];
+    [button addTarget:self action:@selector(buttonUpCancel:) forControlEvents:UIControlEventTouchDragExit];
+    [button addTarget:self action:@selector(buttonUp:) forControlEvents:UIControlEventTouchUpInside];
+    button.layer.cornerRadius = 10.5;
+    [[alertController view] addSubview:button];
+
+    UIImageView *cellImage = [[UIImageView alloc] init];
+    cellImage.image = [self imageWithView:cellToCapture];
+    double widthInPoints = cellImage.image.size.width;
+    double heightInPoints = cellImage.image.size.height;
+    [cellImage setFrame:CGRectMake(0, 0, widthInPoints, heightInPoints)];
+    cellImage.contentMode = UIViewContentModeScaleAspectFit;
+    
+    SButton *button2 = [SButton buttonWithType:UIButtonTypeSystem];
+    button2.frame = CGRectMake(10 + [alertController view].bounds.origin.x , [alertController view].bounds.origin.y+50, [alertController view].frame.size.width - margin * 4.0F - 20, heightInPoints+10);
+
+    if (grouped) {
+        [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-15, button2.bounds.size.height)];
+    } else {
+        [cellImage setFrame:CGRectMake(button2.bounds.origin.x, button2.bounds.origin.y, button2.bounds.size.width-30, button2.bounds.size.height)];
+    }
+
+    [button2 setBackgroundColor:[UIColor systemGrayColor]];
+    [button2 setAlpha:0.1f];
+    button2.layer.cornerRadius = 12.5;
+
+    [[alertController view] addSubview:button2];
+    [[alertController view] addSubview:cellImage];
+    cellImage.center = button2.center;
+
+    picker.center = CGPointMake(button.center.x, picker.center.y+50+heightInPoints);
+    button.frame = CGRectMake(10 + [alertController view].bounds.origin.x, [alertController view].bounds.origin.y + (picker.frame.size.height+30) + button2.frame.size.height, [alertController view].frame.size.width - margin * 4.0F - 20, 50);
+
+    UIPopoverPresentationController *popoverController = alertController.popoverPresentationController;
+    popoverController.sourceView = [alertController view];
+    popoverController.sourceRect = [[alertController view] bounds];
+
+    //[[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:button attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:[alertController view] attribute:NSLayoutAttributeBottomMargin multiplier:1.0 constant:-76.0f]];
+    [[alertController view] addConstraint:[NSLayoutConstraint constraintWithItem:[alertController view] attribute:NSLayoutAttributeBottomMargin relatedBy:NSLayoutRelationEqual toItem:button attribute:NSLayoutAttributeBottom multiplier:1.0 constant:75]];
+
+    // That's how you should do it in iOS 12 - We are able to do that because of how we set ARCHS in Makefile.
+    [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+    [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+
+    // That's how you should do it in iOS 13.
+    /*for (UIWindow *window in [UIApplication sharedApplication].windows) {
+        if (window.isKeyWindow) {
+            [alertController addAction:[UIAlertAction actionWithTitle:CANCEL style:UIAlertActionStyleCancel handler:nil]];
+            [window.rootViewController presentViewController:alertController animated:YES completion:nil];
+            break;
+        }
+    }*/
+
+    #pragma mark pill view
+    UIFont *boldFont = [UIFont boldSystemFontOfSize:13.0f];
+    SBRingerPillView *view = [[%c(SBRingerPillView) alloc] init];
+    view.frame = CGRectMake(0,-56,196,50);
+    UIButton *pillViewButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    pillViewButton.frame = CGRectMake(0, 0, 196, 50);
+    [pillViewButton addTarget:self action:@selector(tappedToChange:) forControlEvents:UIControlEventTouchUpInside];
+
+    UILabel *pillSnoozedLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+    NSDictionary *attribsSnoozedLabel = @{
+                    NSForegroundColorAttributeName:[UIColor secondaryLabelColor],
+                    NSFontAttributeName:boldFont
+                    };
+    NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:SNOOZED attributes:attribsSnoozedLabel];
+    pillSnoozedLabel.attributedText = attributedText;
+    pillSnoozedLabel.textAlignment = NSTextAlignmentCenter;
+    pillSnoozedLabel.textColor = [UIColor secondaryLabelColor];
+    CGSize expectedSnoozedLabelSize = [SNOOZED sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+    pillSnoozedLabel.frame = CGRectMake(pillSnoozedLabel.frame.origin.x,pillSnoozedLabel.frame.origin.y,expectedSnoozedLabelSize.width,expectedSnoozedLabelSize.height);
+    
+    UILabel *pillSnoozedForUntilLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,9,100,15.6667)];
+    NSDictionary *attribsSnoozedForUntilLabel = @{
+                    NSForegroundColorAttributeName:[UIColor systemBlueColor],
+                    NSFontAttributeName:boldFont
+                    };
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.formatterBehavior = NSDateFormatterBehavior10_4;
+    formatter.dateStyle = NSDateFormatterShortStyle;
+    formatter.timeStyle = NSDateFormatterShortStyle;
+    [formatter setDateFormat:@"HH:mm"];
+    NSString *result = [formatter stringForObjectValue:button.pickerDate];
+    NSMutableArray *parts = [SNOOZEU componentsSeparatedByString:@" "];
+    [parts removeObject:parts[0]];
+    NSString *UNTIL = [parts componentsJoinedByString:@" "];
+    NSMutableAttributedString *attributedSnoozedForUntilLabel = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@%@",UNTIL,result] attributes:attribsSnoozedLabel];
+    pillSnoozedForUntilLabel.attributedText = attributedSnoozedForUntilLabel;
+    pillSnoozedForUntilLabel.textAlignment = NSTextAlignmentCenter;
+    pillSnoozedForUntilLabel.textColor = [UIColor systemBlueColor];
+    CGSize expectedSnoozedForUntilLabelSize = [[NSString stringWithFormat:@"%@%@",UNTIL,result] sizeWithAttributes:@{NSFontAttributeName:boldFont}];
+    pillSnoozedForUntilLabel.frame = CGRectMake(pillSnoozedForUntilLabel.frame.origin.x,pillSnoozedForUntilLabel.frame.origin.y,expectedSnoozedForUntilLabelSize.width,expectedSnoozedForUntilLabelSize.height);
+    button.pillViewUntilLabel = pillSnoozedForUntilLabel;
+
+    UILabel *pillTapToChangeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0,25.6667,100,15.6667)];
+    NSDictionary *attribsTapToChangeLabel = @{
+                    NSForegroundColorAttributeName:[UIColor tertiaryLabelColor],
+                    NSFontAttributeName:boldFont
+                    };
+    NSMutableAttributedString *attributedTapToChangeText = [[NSMutableAttributedString alloc] initWithString:TAPCHANGE attributes:attribsSnoozedLabel];
+    pillTapToChangeLabel.attributedText = attributedTapToChangeText;
+    pillTapToChangeLabel.textAlignment = NSTextAlignmentCenter;
+    pillTapToChangeLabel.textColor = [UIColor tertiaryLabelColor];
+    [view addSubview:pillSnoozedLabel];
+    [view addSubview:pillSnoozedForUntilLabel];
+    [view addSubview:pillTapToChangeLabel];
+    [view addSubview:pillViewButton];
+
+    CGFloat combinedSize;
+    view.center = CGPointMake([UIApplication sharedApplication].keyWindow.center.x, view.center.y);
+    combinedSize = expectedSnoozedLabelSize.width+4+expectedSnoozedForUntilLabelSize.width;
+    CGFloat combinedOneX = view.frame.size.width/2 - combinedSize/2;
+    if ([UIApplication sharedApplication].userInterfaceLayoutDirection == 0) {
+        CGFloat combinedTwoX = combinedOneX + pillSnoozedLabel.frame.size.width+4;
+        pillSnoozedLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+        pillSnoozedForUntilLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+    } else {
+        CGFloat combinedTwoX = combinedOneX + pillSnoozedForUntilLabel.frame.size.width+4;
+        pillSnoozedLabel.frame = CGRectMake(combinedTwoX, 9, pillSnoozedLabel.frame.size.width, pillSnoozedLabel.frame.size.height);
+        pillSnoozedForUntilLabel.frame = CGRectMake(combinedOneX, 9, pillSnoozedForUntilLabel.frame.size.width, pillSnoozedForUntilLabel.frame.size.height);
+    }
+    pillTapToChangeLabel.center = CGPointMake(view.frame.size.width/2, pillTapToChangeLabel.center.y);
+
+    button.pillView = view;
 }
 
 %new
@@ -2764,6 +2957,7 @@ static void loadPrefs() {
 		segmentInterval = [[prefs objectForKey:@"segmentInterval"] intValue];
 		chosenButton = [[prefs objectForKey:@"chosenButton"] intValue];
         deliverQuietlyWhilePlaying = [[prefs objectForKey:@"deliverQuietlyWhilePlaying"] boolValue];
+        newMenu = [[prefs objectForKey:@"newMenu"] boolValue];
         // snoozeByLocationEnabled = [[prefs objectForKey:@"snoozeByLocation"] boolValue];
         if (deliverQuietlyWhilePlaying == YES) %init(deliverQuietly);
         // if (snoozeByLocationEnabled != YES) {
@@ -2838,22 +3032,23 @@ static void loadPrefs() {
         if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axonreborn.md5sums"]) %init(AxonFix); // Initiate Axon compatibility fix if Axon Reborn is installed.
     }
 
-    NSArray *args = [[NSClassFromString(@"NSProcessInfo") processInfo] arguments];
-	NSUInteger count = args.count;
-	if (count != 0) {
-		NSString *executablePath = args[0];
-		if (executablePath) {
-			NSString *processName = [executablePath lastPathComponent];
-			BOOL isSpringBoard = [processName isEqualToString:@"SpringBoard"];
-			BOOL isApplication = [executablePath rangeOfString:@"/Application"].location != NSNotFound;
-			if (isSpringBoard || isApplication) {
-				/* WorkflowKit */
-				dlopen("System/Library/PrivateFrameworks/WorkflowKit.framework/WorkflowKit", RTLD_LAZY);
-				/* WorkflowUI */
-    			dlopen("System/Library/PrivateFrameworks/WorkflowUI.framework/WorkflowUI", RTLD_LAZY);
-			}
-		}
-    }
+    #pragma mark Reserved for Location-based snoozing features
+    // NSArray *args = [[NSClassFromString(@"NSProcessInfo") processInfo] arguments];
+	// NSUInteger count = args.count;
+	// if (count != 0) {
+	// 	NSString *executablePath = args[0];
+	// 	if (executablePath) {
+	// 		NSString *processName = [executablePath lastPathComponent];
+	// 		BOOL isSpringBoard = [processName isEqualToString:@"SpringBoard"];
+	// 		BOOL isApplication = [executablePath rangeOfString:@"/Application"].location != NSNotFound;
+	// 		if (isSpringBoard || isApplication) {
+	// 			/* WorkflowKit */
+	// 			dlopen("System/Library/PrivateFrameworks/WorkflowKit.framework/WorkflowKit", RTLD_LAZY);
+	// 			/* WorkflowUI */
+    // 			dlopen("System/Library/PrivateFrameworks/WorkflowUI.framework/WorkflowUI", RTLD_LAZY);
+	// 		}
+	// 	}
+    // }
 
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.miwix.seleniumprefs/settingschanged"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
     %init;

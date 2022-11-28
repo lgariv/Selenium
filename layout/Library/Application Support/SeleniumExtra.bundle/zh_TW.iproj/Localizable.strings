@@ -1,0 +1,48 @@
+<dict>
+	<key>SNOOZEN</key>
+	<string>讓通知稍後提醒</string>
+	<key>SNOOZENS</key>
+	<string>讓通知稍後提醒</string>
+	<key>SNOOZE</key>
+	<string>稍後提醒</string>
+	<key>SNOOZED</key>
+	<string>已啟用稍後提醒</string>
+	<key>fMINUTES</key>
+	<string>十五分鐘後</string>
+	<key>tMINUTES</key>
+	<string>三十分鐘後</string>
+	<key>ffMINUTES</key>
+	<string>四十五分鐘後</string>
+	<key>oneHOUR</key>
+	<string>一小時後</string>
+	<key>twoHOURS</key>
+	<string>兩小時後</string>
+	<key>threeHOURS</key>
+	<string>三小時後</string>
+	<key>fourHOURS</key>
+	<string>四小時後</string>
+	<key>sixHOURS</key>
+	<string>六小時後</string>
+	<key>eightHOURS</key>
+	<string>八小時後</string>
+	<key>twelveHOURS</key>
+	<string>半天後</string>
+	<key>sTIME</key>
+	<string>關鍵時刻（劉寶傑（誤））</string>
+	<key>SNOOZEU</key>
+	<string>在 </string> 提醒 <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>SNOOZEF</key>
+	<string>在 </string> <!-- make sure to leave a space if the last word shouldn't be connected to the number -->
+	<key>CANCEL</key>
+	<string>取消</string>
+	<key>TAPCHANGE</key>
+	<string>點擊來編輯</string>
+	<key>STEPPER</key>
+	<string>步進器</string>
+	<key>ARRIVELOCATION</key>
+	<string>直到抵達指定地點</string>
+	<key>LEAVELOCATION</key>
+	<string>直到離開指定地點</string>
+	<key>LOCATION</key>
+	<string>位置</string>
+</dict>
